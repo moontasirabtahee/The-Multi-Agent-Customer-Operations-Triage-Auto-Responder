@@ -15,8 +15,10 @@
                     "mode": "list",
                     "cachedResultName": "Task"
                 },
-                "summary": "ADD",
-                "additionalFields": {}
+                "summary": "={{ $json.generated_draft === 'ESCALATE_TO_HUMAN' ? 'AI Safety Fallback: Insufficient Docs' : 'Support Handoff: Low Confidence Ticket' }}",
+                "additionalFields": {
+                    "description": "={{ $json.generated_draft === 'ESCALATE_TO_HUMAN' ? 'AI safety fallback triggered: insufficient internal documentation found to safely auto-respond.' : 'The routing agents marked this ticket as low-confidence or high-risk for automated response.' }}"
+                }
             },
             "type": "n8n-nodes-base.jira",
             "typeVersion": 1,
@@ -314,7 +316,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Slack posts interactive events as an x-www-form-urlencoded 'payload' field.\nconst raw = $input.first().json.body ? $input.first().json.body.payload : undefined;\nconst payload = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});\nconst action = (payload.actions && payload.actions[0]) ? payload.actions[0] : {};\n\nlet meta = {};\ntry { meta = JSON.parse(action.value); } catch (e) { meta = {}; }\n\nreturn [{ json: {\n  action_id: action.action_id || '',\n  response_url: payload.response_url || '',\n  user: payload.user ? payload.user.username : '',\n  customer_email: meta.email || '',\n  draft: meta.draft || ''\n} }];"
+                "jsCode": "// Slack posts interactive events as an x-www-form-urlencoded 'payload' field.\nconst raw = $input.first().json.body ? $input.first().json.body.payload : undefined;\nconst payload = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});\nconst action = (payload.actions && payload.actions[0]) ? payload.actions[0] : {};\n\nlet meta = {};\ntry { meta = JSON.parse(action.value); } catch (e) { meta = {}; }\n\nreturn [{ json: {\n  action_id: action.action_id || '',\n  response_url: payload.response_url || '',\n  user: payload.user ? payload.user.username : '',\n  customer_email: meta.email || '',\n  draft: meta.draft || '',\n  validatedDraftText: meta.draft || ''\n} }];"
             },
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
@@ -361,10 +363,10 @@
         {
             "parameters": {
                 "fromEmail": "support@enterprise.com",
-                "toEmail": "={{ $('Parse Interaction').item.json.customer_email }}",
-                "subject": "Re: Your Support Request",
+                "toEmail": "={{ $('Webhook').item.json.body.sender_email }}",
+                "subject": "=Re: {{ $('Webhook').item.json.body.subject || 'Your Support Request' }}",
                 "emailFormat": "text",
-                "text": "={{ $('Parse Interaction').item.json.draft }}",
+                "text": "={{ $json.validatedDraftText }}",
                 "options": {}
             },
             "type": "n8n-nodes-base.emailSend",
@@ -452,12 +454,63 @@
                     "name": "Jira SW Cloud account"
                 }
             }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "e2a9b3d1-4c3a-9f8e-1b6d-4c2a0e93a2f9",
+                            "leftValue": "={{ $json.generated_draft }}",
+                            "rightValue": "ESCALATE_TO_HUMAN",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -1260,
+                384
+            ],
+            "id": "d748fbc2-9ca9-4a9c-9db7-c60088e7f5b8",
+            "name": "Check RAG Fallback"
         }
     ],
     "pinData": {},
     "connections": {
         "HTTP Request": {
             "main": [
+                [
+                    {
+                        "node": "Check RAG Fallback",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check RAG Fallback": {
+            "main": [
+                [
+                    {
+                        "node": "Create an issue",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
                 [
                     {
                         "node": "Build Slack Card",
