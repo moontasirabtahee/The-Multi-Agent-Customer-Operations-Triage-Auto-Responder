@@ -1,0 +1,31 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local Settings / Credentials
+backend/.env
+.env
+
+# Databases
+db.sqlite3
+*.db
+
+# Django local media/static
+/static/
+/media/
+
+# IDE files
+.vscode/
+.idea/
+.gemini/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
