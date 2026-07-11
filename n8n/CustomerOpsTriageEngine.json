@@ -125,7 +125,7 @@
                 "model": {
                     "__rl": true,
                     "mode": "list",
-                    "value": "gemma4b:2B"
+                    "value": "gemma4:e2b"
                 },
                 "builtInTools": {},
                 "options": {
@@ -204,7 +204,7 @@
                 "model": {
                     "__rl": true,
                     "mode": "list",
-                    "value": "gemma4b:2B"
+                    "value": "gemma4:e2b"
                 },
                 "builtInTools": {},
                 "options": {

@@ -11,7 +11,7 @@ An enterprise-grade, hybrid-deployed customer support automation engine. The sys
 | **1. Ingress & Routing Orchestrator** | [`n8n/CustomerOpsTriageEngine.json`](n8n/CustomerOpsTriageEngine.json) | n8n, Docker, Cloudflare Tunnel | Public Cloud VPS (`hstgr.cloud`) | Receives incoming webhooks, drives the agentic logic, maps Slack buttons, and dispatches SMTP emails. |
 | **2. Email Ingress Pull Layer** | [Google Apps Script (`N8N_CONFIG.md`)](N8N_CONFIG.md) | JavaScript, GmailApp API | Google Cloud (Time-driven cron trigger) | Periodically polls Gmail, filters for new unread messages today, and forwards them to n8n Webhook. |
 | **3. RAG Core API Engine** | [`backend/triage_api/`](backend/triage_api/) | Django, LlamaIndex, PostgreSQL, pgvector | Local Workstation (exposed via Cloudflare Tunnel) | Manages enterprise vector index, matches context queries, and generates auto-response drafts. |
-| **4. Local LLM Inference** | [`backend/.env`](backend/.env) (model settings) | Ollama (`gemma4b:2B` / `llama3.2`) | Local Workstation (exposed via Cloudflare Tunnel) | Generates structured classification, executes risk assessment, and formats support replies. |
+| **4. Local LLM Inference** | [`backend/.env`](backend/.env) (model settings) | Ollama (`gemma4:e2b`) | Local Workstation (exposed via Cloudflare Tunnel) | Generates structured classification, executes risk assessment, and formats support replies. |
 | **5. Governance & HITL Approval** | [`Documents/Phase 4.md`](Documents/Phase%204.md) | Slack Block Kit UI, Slack Interactive Webhooks | Slack Cloud / n8n Webhook | Renders draft cards to Slack team channel and captures manual Send/Reject buttons. |
 | **6. Escalation Queue** | [`n8n/CustomerOpsTriageEngine.json`](n8n/CustomerOpsTriageEngine.json) | Jira Software API | Jira Cloud Platform | Automatically creates structured Epic/Task tickets for manual engineering review on RAG bypass. |
 
@@ -21,7 +21,7 @@ An enterprise-grade, hybrid-deployed customer support automation engine. The sys
 
 The project is structured around a decoupled **Hybrid Infrastructure Strategy**:
 1. **Public Cloud VPS (Ingress & Orchestration)**: Runs an internet-facing dockerized **n8n** instance to handle incoming webhooks, route traffic, format Slack interaction cards, and manage human approval callbacks.
-2. **Private Local Workstation (Heavy Computing)**: Hosts a secure **Django Core API**, **LlamaIndex**, and **pgvector** database, with local LLM inference running on **Ollama** (`gemma2:9b`). This keeps sensitive enterprise data private and eliminates API dependency costs.
+2. **Private Local Workstation (Heavy Computing)**: Hosts a secure **Django Core API**, **LlamaIndex**, and **pgvector** database, with local LLM inference running on **Ollama** (`gemma4:e2b`). This keeps sensitive enterprise data private and eliminates API dependency costs.
 
 ---
 
@@ -89,7 +89,7 @@ The bootstrap script provisions *everything else*, but these are your responsibi
 3. **Ollama** + the two models. Bootstrap **checks** for these but never installs them:
    ```bash
    ollama serve
-   ollama pull llama3.2          # or any chat model; set it in backend/.env
+   ollama pull gemma4:e2b        # the chat model; must match OLLAMA_LLM_MODEL in backend/.env
    ollama pull nomic-embed-text  # embedding model (must stay 768-dim)
    ```
 4. **Gmail + Google Apps Script:** Set up a time-driven script in Google Apps Script to pull unread emails and forward them to your VPS n8n webhook.

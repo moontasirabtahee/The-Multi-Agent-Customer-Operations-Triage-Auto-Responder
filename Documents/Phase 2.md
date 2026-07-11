@@ -29,14 +29,14 @@ The architecture handles state and context by splitting data paths. While metada
               ▼                                                                         │  
   ┌────────────────────────────────────────────────────────┐                           │  
   │ AI Agent (Node 1: Classifier)                          │                           │  
-  │ - Model: gemma2:9b (Ollama OpenAI Compatible Engine)   │                           │  
+  │ - Model: gemma4:e2b (Ollama OpenAI Compatible Engine)  │                           │  
   │ - Temperature: 0.0                                     │                           │  
   └──────────────────────────┬─────────────────────────────┘                           │  
                              │                                                         │  
                              ▼ (Emits Structured Category/Urgency/Sentiment JSON)      │  
   ┌────────────────────────────────────────────────────────┐                           │  
   │ AI Agent1 (Node 2: Assessor)                           │                           │  
-  │ - Model: gemma2:9b                                     │                           │  
+  │ - Model: gemma4:e2b                                    │                           │  
   │ - Context Anchor: {{ $('Webhook').item.json.body.text }}◄──────────────────────────┘  
   │ - Temperature: 0.1                                     │  
   └──────────────────────────┬─────────────────────────────┘  
@@ -100,7 +100,7 @@ This blueprint represents the layout and sub-node attachment mappings inside you
     > You are an elite Operations Triage Specialist. Your sole responsibility is to analyze unstructured incoming customer communications and extract structured analytical metadata.  
     > Analyze the input text and extract parameters detailing the core topic category, calculated escalation urgency, and baseline consumer emotional state.
 * **Language Model Sub-Node:** OpenAI Chat Model (ID: `36331d0a-...`)  
-  * **Model Selection:** Expression -> gemma2:9b or llama3.2  
+  * **Model Selection:** Expression -> gemma4:e2b  
   * **Temperature:** 0.0  
 * **Parser Sub-Node:** Structured Output Parser (ID: `b9fbfbfe-...`)  
   * **Property JSON Schema Injection:**  
@@ -129,7 +129,7 @@ This blueprint represents the layout and sub-node attachment mappings inside you
     > - If the request asks for specific database updates, credentials, or financial refunds, set can_auto_respond to false.  
     > - General inquiries or standard billing queries have high baseline confidence scores.
 * **Language Model Sub-Node:** OpenAI Chat Model1 (ID: `648bf6a1-...`)  
-  * **Model Selection:** Expression -> gemma2:9b or llama3.2  
+  * **Model Selection:** Expression -> gemma4:e2b  
   * **Temperature:** 0.1  
 * **Parser Sub-Node:** Structured Output Parser1 (ID: `58c645ef-...`)  
   * **Property JSON Schema Injection:**  

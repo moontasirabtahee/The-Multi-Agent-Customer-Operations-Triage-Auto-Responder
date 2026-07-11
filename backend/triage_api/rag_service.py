@@ -9,7 +9,7 @@ def get_production_rag_engine():
     
     # 1. Fetch configurations from environment variables
     ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
-    llm_model = os.getenv('OLLAMA_LLM_MODEL', 'gemma2:9b')
+    llm_model = os.getenv('OLLAMA_LLM_MODEL', 'gemma4:e2b')
     embed_model_name = os.getenv('OLLAMA_EMBED_MODEL', 'nomic-embed-text')
     
     db_name = os.getenv('DB_NAME', 'customer_ops')

@@ -38,7 +38,7 @@ The data architecture completely decouples the low-level vector computation from
                                                  ▼ (Extracts Top K=3 Nodes via Cosine Similarity)  
                                      ┌───────────────────────┐  
                                      │ Inference Model       │  
-                                     │ (gemma2:9b Engine)    │  
+                                     │ (gemma4:e2b Engine)   │  
                                      └───────────┬───────────┘  
                                                  │  
                                                  ▼ (Returns clean generated draft or 'ESCALATE_TO_HUMAN')  
@@ -100,7 +100,7 @@ def get_production_rag_engine():
       
     # 1. Instantiate Local Open-Source Intelligence Abstractions  
     embed_model = OllamaEmbedding(model_name="nomic-embed-text", base_url="http://localhost:11434")  
-    llm = Ollama(model="gemma2:9b", base_url="http://localhost:11434", request_timeout=60.0)  
+    llm = Ollama(model="gemma4:e2b", base_url="http://localhost:11434", request_timeout=60.0)  
       
     # 2. Bind Persistent pgvector Layer Storage Engine  
     vector_store = PGVectorStore.from_params(  

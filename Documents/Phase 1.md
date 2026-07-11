@@ -165,7 +165,7 @@ Before migrating to Phase 2, the network routing endpoints must successfully pas
 
 | Target Component | Verification Command | Expected Success Result |
 | :---- | :---- | :---- |
-| **Local LLM Engine** | `curl http://localhost:11434/api/tags` | JSON array confirming local presence of target model (gemma2:9b or llama3.2) |
+| **Local LLM Engine** | `curl http://localhost:11434/api/tags` | JSON array confirming local presence of target model (gemma4:e2b) |
 | **Reverse Network Tunnel** | Navigate to custom tunnel URL via external browser | Plaintext verification response: "Ollama is running" |
 | **Cloud Orchestration Gate** | Access `http://[YOUR-VPS-IP]:5678` | Renders active, authenticated n8n workspace canvas |
 
