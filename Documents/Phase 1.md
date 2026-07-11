@@ -144,6 +144,27 @@ volumes:
   n8n_data:
 ```
 
+### 4a. Real-world VPS deployment notes (Hostinger template + Cloudflare tunnel)
+
+The reference compose above pins `5678:5678` for clarity, but a typical managed deployment (e.g. the **Hostinger** one-click n8n template) differs in two ways that bite in practice:
+
+* **Traefik reverse proxy, not a raw port.** The template runs n8n behind Traefik with a Let's Encrypt cert on `https://<project>.<host>/` and publishes the container with `ports: - "5678"` — i.e. a **random, ephemeral host port**. If that Traefik hostname is not resolvable/reachable from the public internet, Slack/Gmail callbacks can't reach n8n, so a **Cloudflare quick tunnel on the VPS** is used to expose it over HTTPS:
+
+  ```bash
+  cloudflared tunnel --url http://127.0.0.1:5678
+  ```
+
+* **Pin the host port.** With `ports: - "5678"`, Docker reassigns a new host port (e.g. `32768` → `32769`) on **every** `docker restart`, which silently breaks the cloudflared tunnel that was pointed at the old port. Pin it so it never moves:
+
+  ```yaml
+  ports:
+    - "127.0.0.1:5678:5678"   # was: - "5678"
+  ```
+
+  Then `docker compose up -d` and point cloudflared at `http://127.0.0.1:5678`.
+
+> **Webhook activation:** after import the workflow is inactive; production webhooks register **only** when you toggle **Active in the n8n UI** (the CLI `update:workflow --active=true` logs success but does not register the endpoint). See `N8N_CONFIG.md` for the full three-tunnel traffic map and paste targets.
+
 ## 5. Security Access Optimization (VPS User Mapping)
 
 To adhere to security best practices and prevent the security flaws associated with running commands blindly under root users, the deployment environment maps the current active shell account directly into Docker's secondary authorization group.  
@@ -175,7 +196,7 @@ Before migrating to Phase 2, the network routing endpoints must successfully pas
 
 The system utilizes an event-driven ingress strategy to ingest customer support emails:
 * **Gmail Pull Mechanism:** A cloud-based **Google Apps Script** executes on a time-driven trigger (configured to run dynamically every 5-10 minutes, or manually every minute for testing).
-* **Ingress Filtering:** The script queries the Gmail inbox using `is:unread label:inbox after:YYYY/MM/DD` to capture only unread emails received on the current date, processing only the single most recent unread thread.
-* **Webhook Forwarding:** It compiles the payload (`sender_email`, `text`, and `subject`) and forwards it as a JSON POST request to the n8n Webhook node (`/webhook/triage` or `/webhook-test/triage`).
+* **Ingress Filtering:** The script queries the Gmail inbox using `is:unread label:inbox` and iterates over **every** unread message (see [`google_apps_script/forwardGmailToN8n.gs`](../google_apps_script/forwardGmailToN8n.gs)).
+* **Webhook Forwarding:** For each message it compiles the payload (`sender_email`, `text`, `subject`) and POSTs it to the n8n Webhook node at the **production** path `/webhook/triage` (via the VPS Cloudflare tunnel). The `/webhook-test/…` path only responds while "Listen for test event" is active in the n8n UI.
 * **State Management:** Once the webhook returns a successful response code (`2xx`), the script marks the email thread as read in Gmail to prevent duplicate processing.
 

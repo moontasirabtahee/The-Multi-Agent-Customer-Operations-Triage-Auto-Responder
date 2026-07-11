@@ -9,7 +9,7 @@ An enterprise-grade, hybrid-deployed customer support automation engine. The sys
 | Phase / Component | Key Configuration File / Location | Tech Stack | Infrastructure / Deployment Layer | Core Role / Function |
 | :--- | :--- | :--- | :--- | :--- |
 | **1. Ingress & Routing Orchestrator** | [`n8n/CustomerOpsTriageEngine.json`](n8n/CustomerOpsTriageEngine.json) | n8n, Docker, Cloudflare Tunnel | Public Cloud VPS (`hstgr.cloud`) | Receives incoming webhooks, drives the agentic logic, maps Slack buttons, and dispatches SMTP emails. |
-| **2. Email Ingress Pull Layer** | [Google Apps Script (`N8N_CONFIG.md`)](N8N_CONFIG.md) | JavaScript, GmailApp API | Google Cloud (Time-driven cron trigger) | Periodically polls Gmail, filters for new unread messages today, and forwards them to n8n Webhook. |
+| **2. Email Ingress Pull Layer** | [`google_apps_script/forwardGmailToN8n.gs`](google_apps_script/forwardGmailToN8n.gs) | JavaScript, GmailApp API | Google Cloud (Time-driven cron trigger) | Polls Gmail on a schedule, forwards **every** unread inbox message to the n8n `/webhook/triage` endpoint, and marks each read on success. |
 | **3. RAG Core API Engine** | [`backend/triage_api/`](backend/triage_api/) | Django, LlamaIndex, PostgreSQL, pgvector | Local Workstation (exposed via Cloudflare Tunnel) | Manages enterprise vector index, matches context queries, and generates auto-response drafts. |
 | **4. Local LLM Inference** | [`backend/.env`](backend/.env) (model settings) | Ollama (`gemma4:e2b`) | Local Workstation (exposed via Cloudflare Tunnel) | Generates structured classification, executes risk assessment, and formats support replies. |
 | **5. Governance & HITL Approval** | [`Documents/Phase 4.md`](Documents/Phase%204.md) | Slack Block Kit UI, Slack Interactive Webhooks | Slack Cloud / n8n Webhook | Renders draft cards to Slack team channel and captures manual Send/Reject buttons. |
@@ -145,25 +145,27 @@ The local RAG service is fully parameterized. To ship the project to your GPU-en
 
 ## ⚙️ Setting Up n8n Workflow
 
-The `n8n/CustomerOpsTriageEngine.json` file contains the full exported orchestration canvas. Import it into your n8n instance (**Workflows → Import from File**), then reconnect credentials for your environment. The workflow implements all four phases end to end:
+Import `n8n/CustomerOpsTriageEngine.json` into your n8n instance (**Workflows → Import from File**), reconnect credentials, then **toggle the workflow Active** (the production `/webhook/triage` endpoint only registers when Active — activating via the CLI does *not* work). End-to-end shape:
 
-* **Ingress & routing:** `Webhook` → `AI Agent` (Classifier) → `AI Agent1` (Risk Assessor) → `Switch`.
-* **RAG branch (High Confidence):** `HTTP Request` (Django RAG endpoint) → `Build Slack Card` → `Post Draft to Slack`.
+* **Ingress & routing:** `Webhook` → `Valid Ticket` (drops empty payloads) → `AI Agent` (Classifier) → `AI Agent1` (Risk Assessor) → `Switch`.
+* **RAG branch (High Confidence):** `HTTP Request` (Django RAG) → `Check RAG Fallback` → `Build Slack Card` → `Post Draft to Slack`; if the RAG returns `ESCALATE_TO_HUMAN` the fallback opens a Jira `Create an issue` instead.
 * **Escalation branch (Low Confidence / Risk):** `Create an issue` (Jira).
-* **Slack HITL callback (independent trigger):** `Slack Interactivity` webhook → `Parse Interaction` → `Route Approval` → `Dispatch Customer Email` / `Update Card - Approved` / `Update Card - Escalated`.
+* **Slack HITL callback (independent trigger):** `Slack Interactivity` → `Parse Interaction` → `Valid Interaction` (drops junk payloads) → `Route Approval` → **approve:** `Dispatch Customer Email` → `Update Card - Approved`; **reject:** `Create Escalation Ticket` (Jira) → `Update Card - Escalated`.
 
-Before running the Slack governance layer, configure these in the **n8n instance** (they are consumed by n8n on the VPS, not by Django):
+Configure these (consumed by **n8n**, not Django):
 
-| Setting | Where | Purpose |
+| Setting | Where | Value |
 | :--- | :--- | :--- |
-| `SLACK_BOT_TOKEN` | n8n environment variable | Bearer auth for `chat.postMessage` in the `Post Draft to Slack` node |
-| SMTP credential | n8n **Credentials** | Used by the `Dispatch Customer Email` node to send the approved reply |
-| RAG endpoint URL | `HTTP Request` node | Point it at your Cloudflare tunnel URL for the local Django API |
-| Slack Interactivity Request URL | Slack App dashboard | Set to `https://<your-n8n-host>/webhook/slack-interactive` |
+| `SLACK_BOT_TOKEN` | n8n environment variable | Bot token `xoxb-…` (Bearer auth for `chat.postMessage`). Never paste a raw token into the node — n8n exports it and GitHub blocks the push. |
+| SMTP credential | n8n **Credentials** | `Dispatch Customer Email` node |
+| Jira credential + Project/Issue Type | the two Jira nodes | `Create an issue` / `Create Escalation Ticket` |
+| RAG `HTTP Request` URL | node | your **Django** tunnel `…/api/v1/triage/rag/` |
+| Chat model Base URL | `OpenAI Chat Model` nodes | your **Ollama** tunnel `…/v1` |
+| Slack Interactivity Request URL | Slack App dashboard | your **VPS n8n** tunnel `…/webhook/slack-interactive` |
 
-After editing the workflow in n8n, re-export the JSON back into this file to keep it under version control.
+> ⚠️ **Do not re-export the workflow back over this file** unless intentional — it reverts repo-side fixes (and can embed secrets). Treat the repo JSON as the source of truth; import it, don't export over it.
 
-> 📋 **See [`N8N_CONFIG.md`](N8N_CONFIG.md)** for the exact node-by-node values (tunnel URLs, model, endpoints, channel, credentials, and Slack app setup) to plug into the imported workflow.
+> 📋 **See [`N8N_CONFIG.md`](N8N_CONFIG.md)** for the full traffic map (three tunnels), node-by-node values, the VPS port-pinning fix, and the webhook-activation gotcha.
 
 ## 📚 Knowledge Base
 

@@ -25,18 +25,49 @@ environment-specific value you supply.
 | :--- | :--- | :--- |
 | `SLACK_BOT_TOKEN` | `<xoxb-your-slack-bot-token>` | `Post Draft to Slack` (`Authorization: Bearer …`) |
 
-## 2. Reverse-tunnel endpoints (regenerate each run)
+## 2. Traffic map & the THREE Cloudflare tunnels
 
-Both tunnels are opened automatically by **`pipeline.ps1`**, which prints the two fresh
-URLs (and the exact fields to paste them into) at the end of every run.
+There are **three** cloudflared quick tunnels, in two directions. Getting them confused is
+the single most common cause of "nothing works":
 
-| Service | Local | Public quick-tunnel URL (example — ephemeral) |
-| :--- | :--- | :--- |
-| Django RAG API | `127.0.0.1:8520` | `https://<your-django-tunnel>.trycloudflare.com` |
-| Ollama LLM | `127.0.0.1:11434` | `https://<your-ollama-tunnel>.trycloudflare.com` |
+```
+  Gmail / Slack ──► VPS n8n            (tunnel #3, runs ON THE VPS)
+                       │
+   VPS n8n ───────────┼──► Django RAG  (tunnel #1, from pipeline.ps1 on your PC)
+                       └──► Ollama LLM  (tunnel #2, from pipeline.ps1 on your PC)
+```
 
-> The Ollama tunnel **must** be launched with `--http-host-header localhost:11434`
-> (already baked into `pipeline.ps1`) or Ollama returns 403 for the proxied Host header.
+| # | Tunnel | Runs on | Fronts | Used by |
+| :-- | :--- | :--- | :--- | :--- |
+| 1 | Django RAG | your PC (`pipeline.ps1`) | `127.0.0.1:8520` | n8n `HTTP Request` node |
+| 2 | Ollama LLM | your PC (`pipeline.ps1`) | `127.0.0.1:11434` | n8n `OpenAI Chat Model` nodes |
+| 3 | VPS n8n | the VPS | `127.0.0.1:5678` (n8n) | Gmail Apps Script + Slack callbacks |
+
+Tunnels #1 and #2 are opened automatically by `pipeline.ps1`, which prints the fresh URLs
+at the end of every run. Tunnel #3 you start on the VPS:
+```bash
+cloudflared tunnel --url http://127.0.0.1:5678
+```
+
+> **Ollama tunnel (#2)** must use `--http-host-header localhost:11434` (baked into
+> `pipeline.ps1`) or Ollama returns 403 for the proxied Host header. n8n (#3) needs no such flag.
+
+> **VPS port must be pinned.** The Hostinger n8n compose defaults to `ports: - "5678"`,
+> which assigns a **random** host port that changes on every `docker restart` and silently
+> breaks tunnel #3. Pin it: `ports: - "127.0.0.1:5678:5678"`, then point cloudflared at 5678.
+
+> **Every quick-tunnel URL is ephemeral** — it changes when its cloudflared restarts, so all
+> four paste targets below (2 in n8n nodes, 1 in Slack, 1 in the Gmail script) must be
+> re-updated after a restart. A **named tunnel** (needs a domain) makes them stable.
+
+## 2b. Activating the workflow (webhook registration)
+
+The production webhook `/webhook/triage` only exists while the workflow is **Active**.
+After importing the workflow it is `active: false`, and — importantly — **toggling Active
+from the n8n UI is the only reliable way to register the webhook.** Activating via the CLI
+(`n8n update:workflow --active=true`) or a container restart logs "Activated workflow" but
+leaves the endpoint returning `404 not registered`. If Gmail/Slack get a 404, open the
+workflow and flip the **Active** switch (top-right).
 
 ## 3. Node-by-node values
 
@@ -60,9 +91,13 @@ URLs (and the exact fields to paste them into) at the end of every run.
 ## 4. Slack App setup
 
 1. api.slack.com/apps → **Create New App → From Scratch**.
-2. **OAuth & Permissions → Bot Token Scopes:** `chat:write`, `chat:write.public`. Install to workspace, copy the `xoxb-…` token into `SLACK_BOT_TOKEN`.
-3. **Interactivity & Shortcuts → On → Request URL:**
-   `https://<your-n8n-host>/webhook/slack-interactive`
+2. **OAuth & Permissions → Bot Token Scopes:** `chat:write`, `chat:write.public`. Install to workspace, copy the **Bot User OAuth Token** (`xoxb-…`) into `SLACK_BOT_TOKEN`. Note: `chat.postMessage` needs a `Bearer` **bot** (`xoxb-`) token — an app-level (`xapp-`) token will fail with `invalid_auth`.
+3. **Interactivity & Shortcuts → On → Request URL:** your **VPS n8n tunnel** (#3) + path —
+   `https://<vps-n8n-tunnel>.trycloudflare.com/webhook/slack-interactive`
+
+> ⚠️ **Never paste a token directly into the node's Authorization header.** n8n exports it as
+> plaintext, and GitHub push-protection will block the push (and the token is then leaked).
+> Use `=Bearer {{ $env.SLACK_BOT_TOKEN }}` (already set) with the env var, or an n8n credential.
 
 ## 5. Local backend `.env` (reference)
 
@@ -139,7 +174,18 @@ If you want to read/send emails securely via API rather than SMTP, you can swap 
 
 ## 7. Triggering the Workflow via Gmail (Ingress Forwarding)
 
-Since your current n8n workflow starts with a **Webhook Trigger** (listening for a `POST` request on `/webhook/triage`), you can forward new Gmail messages to this webhook using a simple **Google Apps Script**. This is the cleanest approach because it does not require you to modify your n8n workflow nodes.
+Your n8n workflow starts with a **Webhook Trigger** on `/webhook/triage`, so new Gmail
+messages are forwarded to it by a **Google Apps Script** — no change to the workflow nodes.
+
+> **Canonical script:** the maintained version lives in the repo at
+> **[`google_apps_script/forwardGmailToN8n.gs`](google_apps_script/forwardGmailToN8n.gs)** and
+> forwards **every** unread inbox message (marking each read only on a 2xx). The copy inlined
+> below is an older single-message illustration — prefer the repo file.
+>
+> Set `n8nWebhookUrl` to your **VPS n8n tunnel** (#3) + the **production** path:
+> `https://<vps-n8n-tunnel>.trycloudflare.com/webhook/triage` — NOT `/webhook-test/…`, which
+> only responds while you are clicking "Listen for test event", and NOT the raw
+> `…hstgr.cloud` host (which isn't reachable externally).
 
 ### Google Apps Script Setup (Automatic Forwarder)
 
@@ -148,9 +194,8 @@ Since your current n8n workflow starts with a **Webhook Trigger** (listening for
 
 ```javascript
 function forwardGmailToN8n() {
-  // 1. Webhook URL: Use webhook-test/ path for debugging/testing in n8n UI,
-  // or change to /webhook/triage for active/production workflows.
-  var n8nWebhookUrl = "https://n8n-fl2j.srv1764813.hstgr.cloud/webhook-test/triage"; 
+  // VPS n8n cloudflared tunnel (#3) + PRODUCTION path. Update after each tunnel restart.
+  var n8nWebhookUrl = "https://<vps-n8n-tunnel>.trycloudflare.com/webhook/triage";
   
   Logger.log("Starting Gmail to n8n forwarder script...");
   
