@@ -1,8 +1,10 @@
 /**
  * Gmail -> n8n ingress forwarder (Google Apps Script).
  *
- * Runs on a time-driven trigger, finds the latest unread inbox email received
- * today, and POSTs it to the n8n `triage` webhook as { text, sender_email, subject }.
+ * Runs on a time-driven trigger, finds EVERY unread inbox email, and POSTs each
+ * one to the n8n `triage` webhook as { text, sender_email, subject }. Each message
+ * is marked read only after it is successfully forwarded (2xx), so a failed send
+ * is retried on the next run.
  *
  * SETUP:
  *   1. script.google.com -> New Project -> paste this file.
@@ -22,69 +24,64 @@ function forwardGmailToN8n() {
 
   Logger.log("Starting Gmail to n8n forwarder script...");
 
-  var today = new Date();
-  var dateString = today.getFullYear() + "/" + (today.getMonth() + 1) + "/" + today.getDate();
-  var searchQuery = "is:unread label:inbox after:" + dateString;
-
+  // Every unread message currently in the inbox.
+  var searchQuery = "is:unread label:inbox";
   var threads = GmailApp.search(searchQuery);
-  Logger.log("Found " + threads.length + " matching unread threads.");
+  Logger.log("Found " + threads.length + " unread thread(s).");
 
   if (threads.length === 0) {
-    Logger.log("No unread threads found for today. Exiting.");
+    Logger.log("No unread inbox threads found. Exiting.");
     return;
   }
 
-  var latestThread = threads[0];
-  var messages = latestThread.getMessages();
+  var forwarded = 0;
+  var failed = 0;
 
-  var latestMessage = null;
-  for (var k = messages.length - 1; k >= 0; k--) {
-    if (messages[k].isUnread()) {
-      latestMessage = messages[k];
-      break;
+  for (var t = 0; t < threads.length; t++) {
+    var messages = threads[t].getMessages();
+
+    for (var m = 0; m < messages.length; m++) {
+      var message = messages[m];
+      if (!message.isUnread()) {
+        continue; // only forward unread messages within the thread
+      }
+
+      var rawFrom = message.getFrom();
+      var emailMatch = rawFrom.match(/<([^>]+)>/);
+      var senderEmail = emailMatch ? emailMatch[1] : rawFrom;
+
+      var payload = {
+        sender_email: senderEmail,
+        text: message.getPlainBody(),
+        subject: message.getSubject()
+      };
+
+      var options = {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
+
+      try {
+        var response = UrlFetchApp.fetch(n8nWebhookUrl, options);
+        var responseCode = response.getResponseCode();
+
+        if (responseCode >= 200 && responseCode < 300) {
+          message.markRead();
+          forwarded++;
+          Logger.log("Forwarded + marked read: " + senderEmail + " | " + message.getSubject());
+        } else {
+          failed++;
+          Logger.log("Failed (HTTP " + responseCode + "): " + message.getSubject() +
+                     " -> " + response.getContentText());
+        }
+      } catch (e) {
+        failed++;
+        Logger.log("Error forwarding '" + message.getSubject() + "': " + e.toString());
+      }
     }
   }
 
-  if (!latestMessage) {
-    Logger.log("No unread messages found in the latest thread.");
-    return;
-  }
-
-  var rawFrom = latestMessage.getFrom();
-  var emailMatch = rawFrom.match(/<([^>]+)>/);
-  var senderEmail = emailMatch ? emailMatch[1] : rawFrom;
-
-  var payload = {
-    sender_email: senderEmail,
-    text: latestMessage.getPlainBody(),
-    subject: latestMessage.getSubject()
-  };
-
-  var options = {
-    method: "post",
-    contentType: "application/json",
-    payload: JSON.stringify(payload),
-    validateHttpsCertificates: false, // Tunnel cert is valid; kept lenient for flexibility.
-    muteHttpExceptions: true
-  };
-
-  Logger.log("Forwarding message from: " + senderEmail);
-
-  try {
-    var response = UrlFetchApp.fetch(n8nWebhookUrl, options);
-    var responseCode = response.getResponseCode();
-    var responseBody = response.getContentText();
-
-    Logger.log("n8n Response Code: " + responseCode);
-    Logger.log("n8n Response Body: " + responseBody);
-
-    if (responseCode >= 200 && responseCode < 300) {
-      latestMessage.markRead();
-      Logger.log("Message forwarded successfully and marked as read.");
-    } else {
-      Logger.log("Failed to forward. Webhook returned status: " + responseCode);
-    }
-  } catch (e) {
-    Logger.log("Error sending fetch call: " + e.toString());
-  }
+  Logger.log("Done. Forwarded: " + forwarded + ", Failed: " + failed);
 }
