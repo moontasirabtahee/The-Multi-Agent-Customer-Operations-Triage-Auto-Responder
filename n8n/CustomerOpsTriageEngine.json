@@ -15,22 +15,22 @@
           "mode": "list",
           "cachedResultName": "Task"
         },
-        "summary": "={{ $json.generated_draft === 'ESCALATE_TO_HUMAN' ? 'AI Safety Fallback: Insufficient Docs' : 'Support Handoff: Low Confidence Ticket' }}",
+        "summary": "={{ ($json.generated_draft === 'ESCALATE_TO_HUMAN' ? '[AI Safety Fallback] ' : '[Low-Confidence Handoff] ') + ($('AI Agent').item.json.output?.category ?? $('AI Agent').item.json.category ?? 'TICKET') + '/' + ($('AI Agent').item.json.output?.urgency ?? $('AI Agent').item.json.urgency ?? 'N-A') + ' - ' + ($('Webhook').item.json.body.subject || 'Customer support ticket') }}",
         "additionalFields": {
-          "description": "={{ $json.generated_draft === 'ESCALATE_TO_HUMAN' ? 'AI safety fallback triggered: insufficient internal documentation found to safely auto-respond.' : 'The routing agents marked this ticket as low-confidence or high-risk for automated response.' }}"
+          "description": "=Escalation Reason:\n{{ $json.generated_draft === 'ESCALATE_TO_HUMAN' ? 'AI Safety Fallback - the RAG engine found insufficient internal documentation to safely auto-respond, so the ticket was withheld from automation.' : ('The routing agents flagged this ticket as low-confidence / high-risk for automated response. ' + ($('AI Agent1').item.json.output?.escalation_reason ?? $('AI Agent1').item.json.escalation_reason ?? 'No specific escalation reason was returned by the risk assessor.')) }}\n\n-------- Triage Metadata --------\nCustomer:   {{ $('Webhook').item.json.body.sender_email }}\nSubject:    {{ $('Webhook').item.json.body.subject }}\nCategory:   {{ $('AI Agent').item.json.output?.category ?? $('AI Agent').item.json.category ?? 'N/A' }}\nUrgency:    {{ $('AI Agent').item.json.output?.urgency ?? $('AI Agent').item.json.urgency ?? 'N/A' }}\nSentiment:  {{ $('AI Agent').item.json.output?.sentiment ?? $('AI Agent').item.json.sentiment ?? 'N/A' }}\nConfidence: {{ $('AI Agent1').item.json.output?.confidence_score ?? $('AI Agent1').item.json.confidence_score ?? 'N/A' }} / 10\nAuto-Respond Eligible: {{ $('AI Agent1').item.json.output?.can_auto_respond ?? $('AI Agent1').item.json.can_auto_respond ?? 'N/A' }}\n\n-------- Original Customer Email --------\n{{ $('Webhook').item.json.body.text }}\n\n-------- Attempted RAG Draft --------\n{{ $json.generated_draft && $json.generated_draft !== 'ESCALATE_TO_HUMAN' ? $json.generated_draft : 'N/A - the ticket was escalated before a usable RAG draft was produced.' }}"
         }
       },
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        -3360,
-        608
+        -416,
+        352
       ],
-      "id": "1781b63a-43fa-4e10-a3d3-c3fa3c14af8f",
+      "id": "fd56c8f4-bedb-4fd3-9739-94f4b42dc2b4",
       "name": "Create an issue",
       "credentials": {
         "jiraSoftwareCloudApi": {
-          "id": "KZp27YAHhmZlJlXg",
+          "id": "LFqCRA4z6VUKtIWn",
           "name": "Jira SW Cloud account"
         }
       }
@@ -38,7 +38,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://munich-lol-resistant-consideration.trycloudflare.com/api/v1/triage/rag/",
+        "url": "https://eclipse-analysts-smallest-majority.trycloudflare.com/api/v1/triage/rag/",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ text: $('Webhook').item.json.body.text }) }}",
@@ -47,10 +47,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3376,
-        272
+        -432,
+        16
       ],
-      "id": "3538cbbf-b236-435a-89be-fef12daf971d",
+      "id": "34a15127-a852-4634-9626-06909836592a",
       "name": "HTTP Request"
     },
     {
@@ -115,10 +115,10 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
       "position": [
-        -3568,
-        496
+        -624,
+        240
       ],
-      "id": "d10ab893-26ce-4bf4-9ce9-de6309f69d58",
+      "id": "92b27201-de34-478f-8766-cbbf5d703b27",
       "name": "Switch"
     },
     {
@@ -136,14 +136,14 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        -4272,
-        656
+        -1328,
+        400
       ],
-      "id": "5de6b877-7aaf-40ba-a6fd-ba3d424cde56",
+      "id": "69ff2530-619e-422d-a6bb-e7d97200d511",
       "name": "OpenAI Chat Model",
       "credentials": {
         "openAiApi": {
-          "id": "EguLb9oRlFKFC6Xu",
+          "id": "gVpEoJ6OIMixdKdq",
           "name": "OpenAI account"
         }
       }
@@ -157,10 +157,10 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4688,
-        496
+        -1744,
+        240
       ],
-      "id": "1f7b94b9-4e76-4660-b7b5-d815285a0031",
+      "id": "3adfe250-308b-4c98-a887-aa597c536b59",
       "name": "Webhook",
       "webhookId": "b88cbe4e-11e8-4d69-a7f7-df1721290b67"
     },
@@ -176,10 +176,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        -4256,
-        496
+        -1312,
+        240
       ],
-      "id": "0852a4c5-b681-4d10-b67b-c3733f526c3f",
+      "id": "88e7cf07-836c-466c-a8b0-b6973eab6944",
       "name": "AI Agent"
     },
     {
@@ -194,10 +194,10 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        -3920,
-        496
+        -976,
+        240
       ],
-      "id": "b4dc0df5-bb4b-4b2c-be55-c9cb4641fc83",
+      "id": "a148ebe8-9c7b-4489-b27c-24d9f50cfcd8",
       "name": "AI Agent1"
     },
     {
@@ -215,14 +215,14 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
       "typeVersion": 1.3,
       "position": [
-        -3936,
-        688
+        -992,
+        432
       ],
-      "id": "7bd29cb3-479b-450d-9ebe-25a7798ab369",
+      "id": "e6d9931a-3283-4e69-aaa6-7ee60a28a854",
       "name": "OpenAI Chat Model1",
       "credentials": {
         "openAiApi": {
-          "id": "EguLb9oRlFKFC6Xu",
+          "id": "gVpEoJ6OIMixdKdq",
           "name": "OpenAI account"
         }
       }
@@ -235,10 +235,10 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -4112,
-        784
+        -1168,
+        528
       ],
-      "id": "56639eff-1152-42fc-83b3-e681abbe9096",
+      "id": "54bd5973-9db8-4118-90f7-50b31600648c",
       "name": "Structured Output Parser"
     },
     {
@@ -249,23 +249,23 @@
       "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
       "typeVersion": 1.3,
       "position": [
-        -3776,
-        768
+        -832,
+        512
       ],
-      "id": "259335fa-75cb-4989-86ec-85b376999ddc",
+      "id": "941db891-b035-4857-b498-8c3048d76468",
       "name": "Structured Output Parser1"
     },
     {
       "parameters": {
-        "jsCode": "// Build the Slack Block Kit payload from the RAG draft + original ticket context.\nconst webhook = $('Webhook').first().json.body || {};\nconst draft = $input.first().json.generated_draft || '';\nconst email = webhook.sender_email || 'unknown@customer.com';\nconst query = webhook.text || '';\nconst subject = webhook.subject || '';\n\nconst body = {\n  channel: 'customer-ops-triage',\n  text: 'New high-confidence triage draft ready for review',\n  blocks: [\n    { type: 'header', text: { type: 'plain_text', text: '📥 NEW HIGH-CONFIDENCE TRIAGE DRAFT', emoji: true } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Customer:* ' + email } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Original Query:*\\n>' + query } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*AI Generated Response:*\\n```' + draft + '```' } },\n    { type: 'actions', elements: [\n      { type: 'button', text: { type: 'plain_text', text: 'Approve & Send', emoji: true }, style: 'primary', action_id: 'approve_triage_send', value: JSON.stringify({ email: email, draft: draft, subject: subject }) },\n      { type: 'button', text: { type: 'plain_text', text: 'Reject & Escalate', emoji: true }, style: 'danger', action_id: 'reject_triage_escalate', value: JSON.stringify({ email: email, draft: draft, subject: subject }) }\n    ] }\n  ]\n};\n\nreturn [{ json: { slackBody: body } }];"
+        "jsCode": "// Build the Slack Block Kit payload from the RAG draft + original ticket context.\nconst webhook = $('Webhook').first().json.body || {};\nconst draft = $input.first().json.generated_draft || '';\nconst email = webhook.sender_email || 'unknown@customer.com';\nconst query = webhook.text || '';\nconst subject = webhook.subject || '';\nconst queryShort = query.slice(0, 900); // Slack button 'value' is capped at 2000 chars; carry a safe excerpt of the real email to the escalation ticket\n\nconst body = {\n  channel: 'customer-ops-triage',\n  text: 'New high-confidence triage draft ready for review',\n  blocks: [\n    { type: 'header', text: { type: 'plain_text', text: '📥 NEW HIGH-CONFIDENCE TRIAGE DRAFT', emoji: true } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Customer:* ' + email } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Original Query:*\\n>' + query } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*AI Generated Response:*\\n```' + draft + '```' } },\n    { type: 'actions', elements: [\n      { type: 'button', text: { type: 'plain_text', text: 'Approve & Send', emoji: true }, style: 'primary', action_id: 'approve_triage_send', value: JSON.stringify({ email: email, draft: draft, subject: subject, query: queryShort }) },\n      { type: 'button', text: { type: 'plain_text', text: 'Reject & Escalate', emoji: true }, style: 'danger', action_id: 'reject_triage_escalate', value: JSON.stringify({ email: email, draft: draft, subject: subject, query: queryShort }) }\n    ] }\n  ]\n};\n\nreturn [{ json: { slackBody: body } }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -2944,
-        256
+        0,
+        0
       ],
-      "id": "db69c70d-002e-4e65-a5ae-e081bff0749c",
+      "id": "b207b321-f554-4130-bc3a-ca2f6c661e63",
       "name": "Build Slack Card"
     },
     {
@@ -293,10 +293,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -2960,
-        400
+        -16,
+        144
       ],
-      "id": "70250f59-101b-4587-a877-61f0929fc99b",
+      "id": "3782767b-fc77-465c-9f34-5c6ba4171a56",
       "name": "Post Draft to Slack"
     },
     {
@@ -308,24 +308,24 @@
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [
-        -4688,
-        1088
+        -1744,
+        832
       ],
-      "id": "c9034acf-d3b2-4cde-a6fd-c567b9980a86",
+      "id": "8805dc1c-2dd2-473e-8f2b-8ed5a8384785",
       "name": "Slack Interactivity",
       "webhookId": "a7f4c1e2-9b3d-4e6a-8c5f-2d1b0a9e7c44"
     },
     {
       "parameters": {
-        "jsCode": "// Slack posts interactive events as an x-www-form-urlencoded 'payload' field.\nconst raw = $input.first().json.body ? $input.first().json.body.payload : undefined;\nconst payload = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});\nconst action = (payload.actions && payload.actions[0]) ? payload.actions[0] : {};\n\nlet meta = {};\ntry { meta = JSON.parse(action.value); } catch (e) { meta = {}; }\n\nreturn [{ json: {\n  action_id: action.action_id || '',\n  response_url: payload.response_url || '',\n  user: payload.user ? payload.user.username : '',\n  customer_email: meta.email || '',\n  draft: meta.draft || '',\n  validatedDraftText: meta.draft || '',\n  subject: meta.subject || ''\n} }];"
+        "jsCode": "// Slack posts interactive events as an x-www-form-urlencoded 'payload' field.\nconst raw = $input.first().json.body ? $input.first().json.body.payload : undefined;\nconst payload = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});\nconst action = (payload.actions && payload.actions[0]) ? payload.actions[0] : {};\n\nlet meta = {};\ntry { meta = JSON.parse(action.value); } catch (e) { meta = {}; }\n\nreturn [{ json: {\n  action_id: action.action_id || '',\n  response_url: payload.response_url || '',\n  user: payload.user ? payload.user.username : '',\n  customer_email: meta.email || '',\n  draft: meta.draft || '',\n  validatedDraftText: meta.draft || '',\n  subject: meta.subject || '',\n  original_email: meta.query || ''\n} }];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -4432,
-        1088
+        -1488,
+        832
       ],
-      "id": "ff666db5-8849-4bac-b36e-3de330e67e49",
+      "id": "4a7c21b6-13fc-418e-8747-7089c0d2d014",
       "name": "Parse Interaction"
     },
     {
@@ -355,10 +355,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -4176,
-        1088
+        -1232,
+        832
       ],
-      "id": "e02de115-449b-4b31-9786-49b9ce470484",
+      "id": "75efa69c-ef46-4060-927f-76b94e863d57",
       "name": "Route Approval"
     },
     {
@@ -373,15 +373,15 @@
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        -3904,
-        976
+        -960,
+        720
       ],
-      "id": "26fce32c-117b-41d1-b222-ded454bc2871",
+      "id": "d6106672-0720-4986-81b5-ba19e48490eb",
       "name": "Dispatch Customer Email",
       "webhookId": "e0a852e8-3d95-4230-b347-d9277e5339a4",
       "credentials": {
         "smtp": {
-          "id": "aXhDvn4IQlBQyRRA",
+          "id": "YLUAKdBs2VEPtEbL",
           "name": "SMTP account"
         }
       }
@@ -398,10 +398,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3648,
-        976
+        -704,
+        720
       ],
-      "id": "3884241e-2491-4f65-b9d1-4b4e7e320abd",
+      "id": "c1d81666-ff7c-41e0-92f7-9a517f374d23",
       "name": "Update Card - Approved"
     },
     {
@@ -416,10 +416,10 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -3392,
-        1200
+        -448,
+        944
       ],
-      "id": "f95d486f-e2ee-45d9-9edf-dd818463bc08",
+      "id": "0f894973-2ec1-4e1a-b2ee-fccd88e1dd2a",
       "name": "Update Card - Escalated"
     },
     {
@@ -438,20 +438,20 @@
         },
         "summary": "=Rejected triage draft for {{ $('Parse Interaction').item.json.customer_email }} — escalated by {{ $('Parse Interaction').item.json.user }}",
         "additionalFields": {
-          "description": "=A support agent reviewed the AI-generated draft in Slack and rejected it, so this ticket was opened for manual handling.\n\nCustomer: {{ $('Parse Interaction').item.json.customer_email }}\nRejected by: {{ $('Parse Interaction').item.json.user }}\n\nRejected draft:\n{{ $('Parse Interaction').item.json.draft }}"
+          "description": "=A support agent reviewed the AI-generated draft in Slack and REJECTED it, so this ticket was opened for manual handling.\n\n-------- Ticket Metadata --------\nCustomer:    {{ $('Parse Interaction').item.json.customer_email }}\nSubject:     {{ $('Parse Interaction').item.json.subject }}\nRejected by:  {{ $('Parse Interaction').item.json.user }}\n\n-------- Original Customer Email --------\n{{ $('Parse Interaction').item.json.original_email || 'Not captured (older Slack card without the email excerpt).' }}\n\n-------- Rejected AI Draft --------\n{{ $('Parse Interaction').item.json.draft }}"
         }
       },
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        -3648,
-        1200
+        -704,
+        944
       ],
-      "id": "30082854-1fd8-4b77-b188-efd92d4e1537",
+      "id": "165da980-4ee1-4c16-b109-ec9a1064b1c7",
       "name": "Create Escalation Ticket",
       "credentials": {
         "jiraSoftwareCloudApi": {
-          "id": "KZp27YAHhmZlJlXg",
+          "id": "LFqCRA4z6VUKtIWn",
           "name": "Jira SW Cloud account"
         }
       }
@@ -483,10 +483,10 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        -3232,
-        272
+        -288,
+        16
       ],
-      "id": "a2badeff-205a-4d81-a1c5-01352abefea5",
+      "id": "cbd9996f-eb3b-40f8-9164-f8d1cb1630a0",
       "name": "Check RAG Fallback"
     }
   ],
@@ -693,15 +693,14 @@
   "active": true,
   "settings": {
     "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": false
+    "binaryMode": "separate"
   },
-  "versionId": "98167b34-0513-4687-afac-869e4eccd278",
+  "versionId": "f56c6abd-bc6f-492c-a168-670f0b0af601",
   "meta": {
     "templateCredsSetupCompleted": true,
-    "instanceId": "8ca65399de194f0cca324af9fcb93d18007a305d42c83e9c855a1b92e53ca99c"
+    "instanceId": "64dc1d63da156939672acf2912f144147951885f84243325239ffb79e869894a"
   },
   "nodeGroups": [],
-  "id": "fqI9cTGIShESrBvJ",
+  "id": "XiTyjQ9NXXNf3FZc",
   "tags": []
 }

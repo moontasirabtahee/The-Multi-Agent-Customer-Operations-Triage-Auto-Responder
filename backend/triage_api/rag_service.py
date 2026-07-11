@@ -17,10 +17,16 @@ def get_production_rag_engine():
     db_password = os.getenv('DB_PASSWORD', 'local_secure_password123')
     db_host = os.getenv('DB_HOST', 'localhost')
     db_port = os.getenv('DB_PORT', '5432')
-    
+
+    # Ollama serializes requests per model; when n8n's Classifier + Risk Assessor
+    # and this RAG call all hit gemma4:e2b at once (plus a possible cold model
+    # reload ~11s), 60s is too tight. Allow a generous, env-tunable timeout that
+    # still stays under the n8n HTTP node's 300s ceiling.
+    ollama_timeout = float(os.getenv('OLLAMA_REQUEST_TIMEOUT', '180'))
+
     # 2. Instantiate Local Open-Source Intelligence Abstractions
-    embed_model = OllamaEmbedding(model_name=embed_model_name, base_url=ollama_host, embed_batch_size=1)
-    llm = Ollama(model=llm_model, base_url=ollama_host, request_timeout=60.0)
+    embed_model = OllamaEmbedding(model_name=embed_model_name, base_url=ollama_host, embed_batch_size=1, request_timeout=ollama_timeout)
+    llm = Ollama(model=llm_model, base_url=ollama_host, request_timeout=ollama_timeout)
     
     # 3. Bind Persistent pgvector Layer Storage Engine
     vector_store = PGVectorStore.from_params(

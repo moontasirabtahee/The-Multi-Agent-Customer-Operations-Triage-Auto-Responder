@@ -1,5 +1,9 @@
 # The Multi-Agent Customer Operations Triage & Auto-Responder
 
+![Customer Ops Triage & Auto-Responder cover](CoverPhotoGithub.png)
+
+![Customer Ops Triage & Auto-Responder architecture cover](CoverPhoto2.png)
+
 An enterprise-grade, hybrid-deployed customer support automation engine. The system automates email ingestion, performs multi-agent ticket classification/risk assessment, queries a local secure RAG (Retrieval-Augmented Generation) knowledge base, and incorporates a Slack-based Human-in-the-Loop (HITL) review process before final email dispatch.
 
 ---
