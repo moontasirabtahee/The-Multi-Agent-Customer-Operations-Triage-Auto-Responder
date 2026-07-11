@@ -1,706 +1,707 @@
 {
-    "name": "Customer Ops Triage Engine",
-    "nodes": [
-        {
-            "parameters": {
-                "project": {
-                    "__rl": true,
-                    "value": "10001",
-                    "mode": "list",
-                    "cachedResultName": "Customer Ops Triage Engine"
-                },
-                "issueType": {
-                    "__rl": true,
-                    "value": "10006",
-                    "mode": "list",
-                    "cachedResultName": "Task"
-                },
-                "summary": "={{ $json.generated_draft === 'ESCALATE_TO_HUMAN' ? 'AI Safety Fallback: Insufficient Docs' : 'Support Handoff: Low Confidence Ticket' }}",
-                "additionalFields": {
-                    "description": "={{ $json.generated_draft === 'ESCALATE_TO_HUMAN' ? 'AI safety fallback triggered: insufficient internal documentation found to safely auto-respond.' : 'The routing agents marked this ticket as low-confidence or high-risk for automated response.' }}"
-                }
-            },
-            "type": "n8n-nodes-base.jira",
-            "typeVersion": 1,
-            "position": [
-                -1360,
-                592
-            ],
-            "id": "12ec5732-44e2-4d60-bdc7-d0a97d00b1f8",
-            "name": "Create an issue",
-            "credentials": {
-                "jiraSoftwareCloudApi": {
-                    "id": "KZp27YAHhmZlJlXg",
-                    "name": "Jira SW Cloud account"
-                }
-            }
+  "name": "Customer Ops Triage Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10001",
+          "mode": "list",
+          "cachedResultName": "Customer Ops Triage Engine"
         },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "https://programme-fri-online-cal.trycloudflare.com/api/v1/triage/rag/",
-                "sendBody": true,
-                "specifyBody": "json",
-                "jsonBody": "={{ JSON.stringify({ text: $('Webhook').item.json.body.text }) }}",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.4,
-            "position": [
-                -1360,
-                384
-            ],
-            "id": "dd7c48fa-00ca-4a9c-9db7-c60088e7f5b8",
-            "name": "HTTP Request"
+        "issueType": {
+          "__rl": true,
+          "value": "10006",
+          "mode": "list",
+          "cachedResultName": "Task"
         },
-        {
-            "parameters": {
-                "rules": {
-                    "values": [
-                        {
-                            "conditions": {
-                                "options": {
-                                    "caseSensitive": true,
-                                    "leftValue": "",
-                                    "typeValidation": "strict",
-                                    "version": 3
-                                },
-                                "conditions": [
-                                    {
-                                        "leftValue": "={{ $json.can_auto_respond === true && $json.confidence_score >= 8 }}",
-                                        "rightValue": "",
-                                        "operator": {
-                                            "type": "boolean",
-                                            "operation": "true",
-                                            "singleValue": true
-                                        },
-                                        "id": "16193753-5d0c-47ef-9125-a70c32e2f2ab"
-                                    }
-                                ],
-                                "combinator": "and"
-                            },
-                            "renameOutput": true,
-                            "outputKey": "High Confidence"
-                        },
-                        {
-                            "conditions": {
-                                "options": {
-                                    "caseSensitive": true,
-                                    "leftValue": "",
-                                    "typeValidation": "strict",
-                                    "version": 3
-                                },
-                                "conditions": [
-                                    {
-                                        "id": "982c9524-2dce-4b34-8473-fbb38d055dd1",
-                                        "leftValue": "={{ $json.can_auto_respond === false || $json.confidence_score < 8 }}",
-                                        "rightValue": "",
-                                        "operator": {
-                                            "type": "boolean",
-                                            "operation": "true",
-                                            "singleValue": true
-                                        }
-                                    }
-                                ],
-                                "combinator": "and"
-                            },
-                            "renameOutput": true,
-                            "outputKey": "Human Queue / Escalated"
-                        }
-                    ]
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.switch",
-            "typeVersion": 3.4,
-            "position": [
-                -1568,
-                480
-            ],
-            "id": "7887b599-f915-4eda-b76f-8e906cc724c9",
-            "name": "Switch"
-        },
-        {
-            "parameters": {
-                "model": {
-                    "__rl": true,
-                    "mode": "list",
-                    "value": "gemma4:e2b"
-                },
-                "builtInTools": {},
-                "options": {
-                    "temperature": 0
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-            "typeVersion": 1.3,
-            "position": [
-                -2272,
-                640
-            ],
-            "id": "0af5137a-84d5-4438-9555-5df5e447b884",
-            "name": "OpenAI Chat Model",
-            "credentials": {
-                "openAiApi": {
-                    "id": "EguLb9oRlFKFC6Xu",
-                    "name": "OpenAI account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "httpMethod": "POST",
-                "path": "triage",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 2.1,
-            "position": [
-                -2688,
-                480
-            ],
-            "id": "294e8d83-4629-4660-a53a-ca3f5056ddac",
-            "name": "Webhook",
-            "webhookId": "b88cbe4e-11e8-4d69-a7f7-df1721290b67"
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "={{ $('Webhook').item.json.body.text }}",
-                "hasOutputParser": true,
-                "options": {
-                    "systemMessage": "You are an elite Operations Triage Specialist. Your sole responsibility is to analyze unstructured incoming customer communications and extract structured analytical metadata. Analyze the input text and extract parameters detailing the core topic category, calculated escalation urgency, and baseline consumer emotional state."
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.agent",
-            "typeVersion": 3.1,
-            "position": [
-                -2256,
-                480
-            ],
-            "id": "6a399dd0-31d6-4e60-8475-57120a43b09f",
-            "name": "AI Agent"
-        },
-        {
-            "parameters": {
-                "promptType": "define",
-                "text": "={{ $('Webhook').item.json.body.text }}",
-                "hasOutputParser": true,
-                "options": {
-                    "systemMessage": "=You are a Risk Assessment Engineer overseeing an autonomous customer support pipeline. Your job is to determine if an incoming ticket can be safely resolved by an automated Retrieval-Augmented Generation (RAG) system, or if it must be routed to a human engineer.\n\nYou will evaluate the raw email text alongside the classification metadata provided by the preceding routing agent:\n[Classification Input Metadata]: {{ $json.category }} | {{ $json.urgency }} | {{ $json.sentiment }}\n\nRules for Autonomy:\n- If Category is BUG, set can_auto_respond to false and confidence_score below 8.0.\n- If Urgency is CRITICAL or Sentiment is ANGRY, set can_auto_respond to false.\n- If the request asks for specific database updates, credentials, or financial refunds, set can_auto_respond to false.\n- General inquiries or standard billing queries have high baseline confidence scores."
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.agent",
-            "typeVersion": 3.1,
-            "position": [
-                -1920,
-                480
-            ],
-            "id": "e29383e9-761a-4f62-adfd-8b1f11b01425",
-            "name": "AI Agent1"
-        },
-        {
-            "parameters": {
-                "model": {
-                    "__rl": true,
-                    "mode": "list",
-                    "value": "gemma4:e2b"
-                },
-                "builtInTools": {},
-                "options": {
-                    "temperature": 0.1
-                }
-            },
-            "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-            "typeVersion": 1.3,
-            "position": [
-                -1936,
-                672
-            ],
-            "id": "20eb4741-3356-46fa-b9fe-4947574ef369",
-            "name": "OpenAI Chat Model1",
-            "credentials": {
-                "openAiApi": {
-                    "id": "EguLb9oRlFKFC6Xu",
-                    "name": "OpenAI account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "schemaType": "manual",
-                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"category\": { \"type\": \"string\", \"enum\": [\"BILLING\", \"BUG\", \"FEATURE_REQUEST\", \"GENERAL_INQUIRY\"], \"description\": \"Core topic category of the customer communication.\" },\n    \"urgency\": { \"type\": \"string\", \"enum\": [\"LOW\", \"MEDIUM\", \"HIGH\", \"CRITICAL\"], \"description\": \"Calculated escalation urgency.\" },\n    \"sentiment\": { \"type\": \"string\", \"enum\": [\"POSITIVE\", \"NEUTRAL\", \"FRUSTRATED\", \"ANGRY\"], \"description\": \"Baseline consumer emotional state.\" }\n  },\n  \"required\": [\"category\", \"urgency\", \"sentiment\"]\n}"
-            },
-            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-            "typeVersion": 1.3,
-            "position": [
-                -2112,
-                768
-            ],
-            "id": "aa64e38d-c379-4e37-8f5d-797882d6b997",
-            "name": "Structured Output Parser"
-        },
-        {
-            "parameters": {
-                "schemaType": "manual",
-                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"confidence_score\": { \"type\": \"number\", \"description\": \"A floating-point evaluation between 1.0 and 10.0 representing automated accuracy likelihood.\" },\n    \"can_auto_respond\": { \"type\": \"boolean\", \"description\": \"True if it can be resolved autonomously via internal documentation, false otherwise.\" },\n    \"escalation_reason\": { \"type\": [\"string\", \"null\"], \"description\": \"Text stating the core justification for human handoff if autonomous is false, otherwise null.\" }\n  },\n  \"required\": [\"confidence_score\", \"can_auto_respond\", \"escalation_reason\"]\n}"
-            },
-            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
-            "typeVersion": 1.3,
-            "position": [
-                -1776,
-                752
-            ],
-            "id": "2430c58e-d4ef-4b57-8380-1ade5298bfc3",
-            "name": "Structured Output Parser1"
-        },
-        {
-            "parameters": {
-                "jsCode": "// Build the Slack Block Kit payload from the RAG draft + original ticket context.\nconst webhook = $('Webhook').first().json.body || {};\nconst draft = $input.first().json.generated_draft || '';\nconst email = webhook.sender_email || 'unknown@customer.com';\nconst query = webhook.text || '';\nconst subject = webhook.subject || '';\n\nconst body = {\n  channel: 'customer-ops-triage',\n  text: 'New high-confidence triage draft ready for review',\n  blocks: [\n    { type: 'header', text: { type: 'plain_text', text: '📥 NEW HIGH-CONFIDENCE TRIAGE DRAFT', emoji: true } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Customer:* ' + email } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Original Query:*\\n>' + query } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*AI Generated Response:*\\n```' + draft + '```' } },\n    { type: 'actions', elements: [\n      { type: 'button', text: { type: 'plain_text', text: 'Approve & Send', emoji: true }, style: 'primary', action_id: 'approve_triage_send', value: JSON.stringify({ email: email, draft: draft, subject: subject }) },\n      { type: 'button', text: { type: 'plain_text', text: 'Reject & Escalate', emoji: true }, style: 'danger', action_id: 'reject_triage_escalate', value: 'reject' }\n    ] }\n  ]\n};\n\nreturn [{ json: { slackBody: body } }];"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                -1168,
-                384
-            ],
-            "id": "122aa2dc-a683-4332-9ec3-8f71565bcfd6",
-            "name": "Build Slack Card"
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "https://slack.com/api/chat.postMessage",
-                "sendHeaders": true,
-                "headerParameters": {
-                    "parameters": [
-                        {
-                            "name": "Content-Type",
-                            "value": "application/json; charset=utf-8"
-                        },
-                        {
-                            "name": "Authorization",
-                            "value": "=Bearer {{ $env.SLACK_BOT_TOKEN }}"
-                        }
-                    ]
-                },
-                "sendBody": true,
-                "specifyBody": "json",
-                "jsonBody": "={{ JSON.stringify($json.slackBody) }}",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.4,
-            "position": [
-                -960,
-                384
-            ],
-            "id": "95a95d43-c14b-4c0c-9fe1-ece5a856beee",
-            "name": "Post Draft to Slack"
-        },
-        {
-            "parameters": {
-                "httpMethod": "POST",
-                "path": "slack-interactive",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.webhook",
-            "typeVersion": 2.1,
-            "position": [
-                -2688,
-                1072
-            ],
-            "id": "b4205bd8-dff4-4337-ae40-95b4096b2ebb",
-            "name": "Slack Interactivity",
-            "webhookId": "a7f4c1e2-9b3d-4e6a-8c5f-2d1b0a9e7c44"
-        },
-        {
-            "parameters": {
-                "jsCode": "// Slack posts interactive events as an x-www-form-urlencoded 'payload' field.\nconst raw = $input.first().json.body ? $input.first().json.body.payload : undefined;\nconst payload = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});\nconst action = (payload.actions && payload.actions[0]) ? payload.actions[0] : {};\n\nlet meta = {};\ntry { meta = JSON.parse(action.value); } catch (e) { meta = {}; }\n\nreturn [{ json: {\n  action_id: action.action_id || '',\n  response_url: payload.response_url || '',\n  user: payload.user ? payload.user.username : '',\n  customer_email: meta.email || '',\n  draft: meta.draft || '',\n  validatedDraftText: meta.draft || '',\n  subject: meta.subject || ''\n} }];"
-            },
-            "type": "n8n-nodes-base.code",
-            "typeVersion": 2,
-            "position": [
-                -2432,
-                1072
-            ],
-            "id": "529ee27e-8fd2-4b85-8f2e-3b728bfa18a2",
-            "name": "Parse Interaction"
-        },
-        {
-            "parameters": {
-                "conditions": {
-                    "options": {
-                        "caseSensitive": true,
-                        "leftValue": "",
-                        "typeValidation": "strict",
-                        "version": 2
-                    },
-                    "conditions": [
-                        {
-                            "id": "a2f9c7d1-0e5b-4c3a-9f8e-1b6d4c2a0e93",
-                            "leftValue": "={{ $json.action_id }}",
-                            "rightValue": "approve_triage_send",
-                            "operator": {
-                                "type": "string",
-                                "operation": "equals"
-                            }
-                        }
-                    ],
-                    "combinator": "and"
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.if",
-            "typeVersion": 2.2,
-            "position": [
-                -2176,
-                1072
-            ],
-            "id": "f4284d3a-724d-408b-86e2-937b0910bdac",
-            "name": "Route Approval"
-        },
-        {
-            "parameters": {
-                "fromEmail": "support@enterprise.com",
-                "toEmail": "={{ $('Parse Interaction').item.json.customer_email }}",
-                "subject": "=Re: {{ $('Parse Interaction').item.json.subject || 'Your Support Request' }}",
-                "emailFormat": "text",
-                "text": "={{ $('Parse Interaction').item.json.validatedDraftText }}",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.emailSend",
-            "typeVersion": 2.1,
-            "position": [
-                -1904,
-                960
-            ],
-            "id": "09835d1c-fb8b-4f59-ae56-94f4cb60c1f6",
-            "name": "Dispatch Customer Email",
-            "webhookId": "e0a852e8-3d95-4230-b347-d9277e5339a4",
-            "credentials": {
-                "smtp": {
-                    "id": "aXhDvn4IQlBQyRRA",
-                    "name": "SMTP account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "={{ $('Parse Interaction').item.json.response_url }}",
-                "sendBody": true,
-                "specifyBody": "json",
-                "jsonBody": "={{ JSON.stringify({ replace_original: true, text: '✅ Approved & sent to ' + $('Parse Interaction').item.json.customer_email + ' by ' + $('Parse Interaction').item.json.user }) }}",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.4,
-            "position": [
-                -1648,
-                960
-            ],
-            "id": "662c8c14-3161-423e-91ee-2108e3417262",
-            "name": "Update Card - Approved"
-        },
-        {
-            "parameters": {
-                "method": "POST",
-                "url": "={{ $('Parse Interaction').item.json.response_url }}",
-                "sendBody": true,
-                "specifyBody": "json",
-                "jsonBody": "={{ JSON.stringify({ replace_original: true, text: '🚫 Rejected & escalated to the human queue by ' + $('Parse Interaction').item.json.user }) }}",
-                "options": {}
-            },
-            "type": "n8n-nodes-base.httpRequest",
-            "typeVersion": 4.4,
-            "position": [
-                -1392,
-                1184
-            ],
-            "id": "3e767ea2-be4f-4a6d-b197-ac3ac701b215",
-            "name": "Update Card - Escalated"
-        },
-        {
-            "parameters": {
-                "project": {
-                    "__rl": true,
-                    "value": "10001",
-                    "mode": "list",
-                    "cachedResultName": "Customer Ops Triage Engine"
-                },
-                "issueType": {
-                    "__rl": true,
-                    "value": "10004",
-                    "mode": "list",
-                    "cachedResultName": "Epic"
-                },
-                "summary": "=Rejected triage draft for {{ $('Parse Interaction').item.json.customer_email }} — escalated by {{ $('Parse Interaction').item.json.user }}",
-                "additionalFields": {
-                    "description": "=A support agent reviewed the AI-generated draft in Slack and rejected it, so this ticket was opened for manual handling.\n\nCustomer: {{ $('Parse Interaction').item.json.customer_email }}\nRejected by: {{ $('Parse Interaction').item.json.user }}\n\nRejected draft:\n{{ $('Parse Interaction').item.json.draft }}"
-                }
-            },
-            "type": "n8n-nodes-base.jira",
-            "typeVersion": 1,
-            "position": [
-                -1648,
-                1184
-            ],
-            "id": "c2670dcd-7045-458b-86a2-ec3e1cc03751",
-            "name": "Create Escalation Ticket",
-            "credentials": {
-                "jiraSoftwareCloudApi": {
-                    "id": "KZp27YAHhmZlJlXg",
-                    "name": "Jira SW Cloud account"
-                }
-            }
-        },
-        {
-            "parameters": {
-                "conditions": {
-                    "options": {
-                        "caseSensitive": true,
-                        "leftValue": "",
-                        "typeValidation": "strict",
-                        "version": 2
-                    },
-                    "conditions": [
-                        {
-                            "id": "e2a9b3d1-4c3a-9f8e-1b6d-4c2a0e93a2f9",
-                            "leftValue": "={{ $json.generated_draft }}",
-                            "rightValue": "ESCALATE_TO_HUMAN",
-                            "operator": {
-                                "type": "string",
-                                "operation": "equals"
-                            }
-                        }
-                    ],
-                    "combinator": "and"
-                },
-                "options": {}
-            },
-            "type": "n8n-nodes-base.if",
-            "typeVersion": 2.2,
-            "position": [
-                -1260,
-                384
-            ],
-            "id": "d748fbc2-9ca9-4a9c-9db7-c60088e7f5b8",
-            "name": "Check RAG Fallback"
+        "summary": "={{ $json.generated_draft === 'ESCALATE_TO_HUMAN' ? 'AI Safety Fallback: Insufficient Docs' : 'Support Handoff: Low Confidence Ticket' }}",
+        "additionalFields": {
+          "description": "={{ $json.generated_draft === 'ESCALATE_TO_HUMAN' ? 'AI safety fallback triggered: insufficient internal documentation found to safely auto-respond.' : 'The routing agents marked this ticket as low-confidence or high-risk for automated response.' }}"
         }
-    ],
-    "pinData": {},
-    "connections": {
-        "HTTP Request": {
-            "main": [
-                [
-                    {
-                        "node": "Check RAG Fallback",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Check RAG Fallback": {
-            "main": [
-                [
-                    {
-                        "node": "Create an issue",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Build Slack Card",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Build Slack Card": {
-            "main": [
-                [
-                    {
-                        "node": "Post Draft to Slack",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Slack Interactivity": {
-            "main": [
-                [
-                    {
-                        "node": "Parse Interaction",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Parse Interaction": {
-            "main": [
-                [
-                    {
-                        "node": "Route Approval",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Route Approval": {
-            "main": [
-                [
-                    {
-                        "node": "Dispatch Customer Email",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Create Escalation Ticket",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Create Escalation Ticket": {
-            "main": [
-                [
-                    {
-                        "node": "Update Card - Escalated",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Dispatch Customer Email": {
-            "main": [
-                [
-                    {
-                        "node": "Update Card - Approved",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Switch": {
-            "main": [
-                [
-                    {
-                        "node": "HTTP Request",
-                        "type": "main",
-                        "index": 0
-                    }
-                ],
-                [
-                    {
-                        "node": "Create an issue",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "OpenAI Chat Model": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "AI Agent",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "AI Agent": {
-            "main": [
-                [
-                    {
-                        "node": "AI Agent1",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Webhook": {
-            "main": [
-                [
-                    {
-                        "node": "AI Agent",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "OpenAI Chat Model1": {
-            "ai_languageModel": [
-                [
-                    {
-                        "node": "AI Agent1",
-                        "type": "ai_languageModel",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Structured Output Parser": {
-            "ai_outputParser": [
-                [
-                    {
-                        "node": "AI Agent",
-                        "type": "ai_outputParser",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "Structured Output Parser1": {
-            "ai_outputParser": [
-                [
-                    {
-                        "node": "AI Agent1",
-                        "type": "ai_outputParser",
-                        "index": 0
-                    }
-                ]
-            ]
-        },
-        "AI Agent1": {
-            "main": [
-                [
-                    {
-                        "node": "Switch",
-                        "type": "main",
-                        "index": 0
-                    }
-                ]
-            ]
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        -3360,
+        608
+      ],
+      "id": "1781b63a-43fa-4e10-a3d3-c3fa3c14af8f",
+      "name": "Create an issue",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "KZp27YAHhmZlJlXg",
+          "name": "Jira SW Cloud account"
         }
+      }
     },
-    "active": false,
-    "settings": {
-        "executionOrder": "v1",
-        "binaryMode": "separate",
-        "availableInMCP": false
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://munich-lol-resistant-consideration.trycloudflare.com/api/v1/triage/rag/",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $('Webhook').item.json.body.text }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3376,
+        272
+      ],
+      "id": "3538cbbf-b236-435a-89be-fef12daf971d",
+      "name": "HTTP Request"
     },
-    "versionId": "21b1bc9b-1020-4224-8ffb-5d9ff736b903",
-    "meta": {
-        "templateCredsSetupCompleted": true,
-        "instanceId": "8ca65399de194f0cca324af9fcb93d18007a305d42c83e9c855a1b92e53ca99c"
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ ($json.output?.can_auto_respond ?? $json.can_auto_respond) === true && ($json.output?.confidence_score ?? $json.confidence_score) >= 8 }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    },
+                    "id": "16193753-5d0c-47ef-9125-a70c32e2f2ab"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "High Confidence"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "982c9524-2dce-4b34-8473-fbb38d055dd1",
+                    "leftValue": "={{ !(($json.output?.can_auto_respond ?? $json.can_auto_respond) === true && ($json.output?.confidence_score ?? $json.confidence_score) >= 8) }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Human Queue / Escalated"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -3568,
+        496
+      ],
+      "id": "d10ab893-26ce-4bf4-9ce9-de6309f69d58",
+      "name": "Switch"
     },
-    "nodeGroups": [],
-    "id": "fqI9cTGIShESrBvJ",
-    "tags": []
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gemma4:e2b"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -4272,
+        656
+      ],
+      "id": "5de6b877-7aaf-40ba-a6fd-ba3d424cde56",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "EguLb9oRlFKFC6Xu",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "triage",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4688,
+        496
+      ],
+      "id": "1f7b94b9-4e76-4660-b7b5-d815285a0031",
+      "name": "Webhook",
+      "webhookId": "b88cbe4e-11e8-4d69-a7f7-df1721290b67"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are an elite Operations Triage Specialist. Your sole responsibility is to analyze unstructured incoming customer communications and extract structured analytical metadata. Analyze the input text and extract parameters detailing the core topic category, calculated escalation urgency, and baseline consumer emotional state."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -4256,
+        496
+      ],
+      "id": "0852a4c5-b681-4d10-b67b-c3733f526c3f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Webhook').item.json.body.text }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=You are a Risk Assessment Engineer overseeing an autonomous customer support pipeline. Your job is to determine if an incoming ticket can be safely resolved by an automated Retrieval-Augmented Generation (RAG) system, or if it must be routed to a human engineer.\n\nYou will evaluate the raw email text alongside the classification metadata provided by the preceding routing agent:\n[Classification Input Metadata]: {{ $json.output?.category ?? $json.category }} | {{ $json.output?.urgency ?? $json.urgency }} | {{ $json.output?.sentiment ?? $json.sentiment }}\n\nRules for Autonomy:\n- If Category is BUG, set can_auto_respond to false and confidence_score below 8.0.\n- If Urgency is CRITICAL or Sentiment is ANGRY, set can_auto_respond to false.\n- If the request asks for specific database updates, credentials, or financial refunds, set can_auto_respond to false.\n- General inquiries or standard billing queries have high baseline confidence scores."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -3920,
+        496
+      ],
+      "id": "b4dc0df5-bb4b-4b2c-be55-c9cb4641fc83",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gemma4:e2b"
+        },
+        "builtInTools": {},
+        "options": {
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -3936,
+        688
+      ],
+      "id": "7bd29cb3-479b-450d-9ebe-25a7798ab369",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "EguLb9oRlFKFC6Xu",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"category\": { \"type\": \"string\", \"enum\": [\"BILLING\", \"BUG\", \"FEATURE_REQUEST\", \"GENERAL_INQUIRY\"], \"description\": \"Core topic category of the customer communication.\" },\n    \"urgency\": { \"type\": \"string\", \"enum\": [\"LOW\", \"MEDIUM\", \"HIGH\", \"CRITICAL\"], \"description\": \"Calculated escalation urgency.\" },\n    \"sentiment\": { \"type\": \"string\", \"enum\": [\"POSITIVE\", \"NEUTRAL\", \"FRUSTRATED\", \"ANGRY\"], \"description\": \"Baseline consumer emotional state.\" }\n  },\n  \"required\": [\"category\", \"urgency\", \"sentiment\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -4112,
+        784
+      ],
+      "id": "56639eff-1152-42fc-83b3-e681abbe9096",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"confidence_score\": { \"type\": \"number\", \"description\": \"A floating-point evaluation between 1.0 and 10.0 representing automated accuracy likelihood.\" },\n    \"can_auto_respond\": { \"type\": \"boolean\", \"description\": \"True if it can be resolved autonomously via internal documentation, false otherwise.\" },\n    \"escalation_reason\": { \"type\": [\"string\", \"null\"], \"description\": \"Text stating the core justification for human handoff if autonomous is false, otherwise null.\" }\n  },\n  \"required\": [\"confidence_score\", \"can_auto_respond\", \"escalation_reason\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        -3776,
+        768
+      ],
+      "id": "259335fa-75cb-4989-86ec-85b376999ddc",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the Slack Block Kit payload from the RAG draft + original ticket context.\nconst webhook = $('Webhook').first().json.body || {};\nconst draft = $input.first().json.generated_draft || '';\nconst email = webhook.sender_email || 'unknown@customer.com';\nconst query = webhook.text || '';\nconst subject = webhook.subject || '';\n\nconst body = {\n  channel: 'customer-ops-triage',\n  text: 'New high-confidence triage draft ready for review',\n  blocks: [\n    { type: 'header', text: { type: 'plain_text', text: '📥 NEW HIGH-CONFIDENCE TRIAGE DRAFT', emoji: true } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Customer:* ' + email } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Original Query:*\\n>' + query } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*AI Generated Response:*\\n```' + draft + '```' } },\n    { type: 'actions', elements: [\n      { type: 'button', text: { type: 'plain_text', text: 'Approve & Send', emoji: true }, style: 'primary', action_id: 'approve_triage_send', value: JSON.stringify({ email: email, draft: draft, subject: subject }) },\n      { type: 'button', text: { type: 'plain_text', text: 'Reject & Escalate', emoji: true }, style: 'danger', action_id: 'reject_triage_escalate', value: JSON.stringify({ email: email, draft: draft, subject: subject }) }\n    ] }\n  ]\n};\n\nreturn [{ json: { slackBody: body } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2944,
+        256
+      ],
+      "id": "db69c70d-002e-4e65-a5ae-e081bff0749c",
+      "name": "Build Slack Card"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://slack.com/api/chat.postMessage",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json; charset=utf-8"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SLACK_BOT_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.slackBody) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -2960,
+        400
+      ],
+      "id": "70250f59-101b-4587-a877-61f0929fc99b",
+      "name": "Post Draft to Slack"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "slack-interactive",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -4688,
+        1088
+      ],
+      "id": "c9034acf-d3b2-4cde-a6fd-c567b9980a86",
+      "name": "Slack Interactivity",
+      "webhookId": "a7f4c1e2-9b3d-4e6a-8c5f-2d1b0a9e7c44"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Slack posts interactive events as an x-www-form-urlencoded 'payload' field.\nconst raw = $input.first().json.body ? $input.first().json.body.payload : undefined;\nconst payload = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});\nconst action = (payload.actions && payload.actions[0]) ? payload.actions[0] : {};\n\nlet meta = {};\ntry { meta = JSON.parse(action.value); } catch (e) { meta = {}; }\n\nreturn [{ json: {\n  action_id: action.action_id || '',\n  response_url: payload.response_url || '',\n  user: payload.user ? payload.user.username : '',\n  customer_email: meta.email || '',\n  draft: meta.draft || '',\n  validatedDraftText: meta.draft || '',\n  subject: meta.subject || ''\n} }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -4432,
+        1088
+      ],
+      "id": "ff666db5-8849-4bac-b36e-3de330e67e49",
+      "name": "Parse Interaction"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a2f9c7d1-0e5b-4c3a-9f8e-1b6d4c2a0e93",
+              "leftValue": "={{ $json.action_id }}",
+              "rightValue": "approve_triage_send",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -4176,
+        1088
+      ],
+      "id": "e02de115-449b-4b31-9786-49b9ce470484",
+      "name": "Route Approval"
+    },
+    {
+      "parameters": {
+        "fromEmail": "support@enterprise.com",
+        "toEmail": "={{ $('Parse Interaction').item.json.customer_email }}",
+        "subject": "=Re: {{ $('Parse Interaction').item.json.subject || 'Your Support Request' }}",
+        "emailFormat": "text",
+        "text": "={{ $('Parse Interaction').item.json.validatedDraftText }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        -3904,
+        976
+      ],
+      "id": "26fce32c-117b-41d1-b222-ded454bc2871",
+      "name": "Dispatch Customer Email",
+      "webhookId": "e0a852e8-3d95-4230-b347-d9277e5339a4",
+      "credentials": {
+        "smtp": {
+          "id": "aXhDvn4IQlBQyRRA",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Parse Interaction').item.json.response_url }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ replace_original: true, text: '✅ Approved & sent to ' + $('Parse Interaction').item.json.customer_email + ' by ' + $('Parse Interaction').item.json.user }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3648,
+        976
+      ],
+      "id": "3884241e-2491-4f65-b9d1-4b4e7e320abd",
+      "name": "Update Card - Approved"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Parse Interaction').item.json.response_url }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ replace_original: true, text: '🚫 Rejected & escalated to the human queue by ' + $('Parse Interaction').item.json.user }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -3392,
+        1200
+      ],
+      "id": "f95d486f-e2ee-45d9-9edf-dd818463bc08",
+      "name": "Update Card - Escalated"
+    },
+    {
+      "parameters": {
+        "project": {
+          "__rl": true,
+          "value": "10001",
+          "mode": "list",
+          "cachedResultName": "Customer Ops Triage Engine"
+        },
+        "issueType": {
+          "__rl": true,
+          "value": "10004",
+          "mode": "list",
+          "cachedResultName": "Epic"
+        },
+        "summary": "=Rejected triage draft for {{ $('Parse Interaction').item.json.customer_email }} — escalated by {{ $('Parse Interaction').item.json.user }}",
+        "additionalFields": {
+          "description": "=A support agent reviewed the AI-generated draft in Slack and rejected it, so this ticket was opened for manual handling.\n\nCustomer: {{ $('Parse Interaction').item.json.customer_email }}\nRejected by: {{ $('Parse Interaction').item.json.user }}\n\nRejected draft:\n{{ $('Parse Interaction').item.json.draft }}"
+        }
+      },
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        -3648,
+        1200
+      ],
+      "id": "30082854-1fd8-4b77-b188-efd92d4e1537",
+      "name": "Create Escalation Ticket",
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "KZp27YAHhmZlJlXg",
+          "name": "Jira SW Cloud account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e2a9b3d1-4c3a-9f8e-1b6d-4c2a0e93a2f9",
+              "leftValue": "={{ $json.generated_draft }}",
+              "rightValue": "ESCALATE_TO_HUMAN",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -3232,
+        272
+      ],
+      "id": "a2badeff-205a-4d81-a1c5-01352abefea5",
+      "name": "Check RAG Fallback"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Check RAG Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check RAG Fallback": {
+      "main": [
+        [
+          {
+            "node": "Create an issue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Slack Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Slack Card": {
+      "main": [
+        [
+          {
+            "node": "Post Draft to Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Interactivity": {
+      "main": [
+        [
+          {
+            "node": "Parse Interaction",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Interaction": {
+      "main": [
+        [
+          {
+            "node": "Route Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Approval": {
+      "main": [
+        [
+          {
+            "node": "Dispatch Customer Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Escalation Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Escalation Ticket": {
+      "main": [
+        [
+          {
+            "node": "Update Card - Escalated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dispatch Customer Email": {
+      "main": [
+        [
+          {
+            "node": "Update Card - Approved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create an issue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "98167b34-0513-4687-afac-869e4eccd278",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8ca65399de194f0cca324af9fcb93d18007a305d42c83e9c855a1b92e53ca99c"
+  },
+  "nodeGroups": [],
+  "id": "fqI9cTGIShESrBvJ",
+  "tags": []
 }

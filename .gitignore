@@ -34,3 +34,6 @@ logs/tunnel_*
 *.njsproj
 *.sln
 *.swp
+
+# Scratch/debug screenshots
+/image.png
