@@ -103,10 +103,14 @@ The repository is cleanly divided by operational responsibilities, separating or
 /customer-ops-triage  
 │  
 ├── /backend            # Django REST application & LlamaIndex configurations  
-├── /workflows          # Production n8n JSON pipeline migrations  
+├── /n8n                # Production n8n JSON pipeline migrations  
+├── /knowledge_base     # Source documents ingested into the RAG vector store  
+├── /Documents          # Phase-by-phase architecture specifications  
 ├── README.md           # Master System Architecture Documentation  
-└── docker-compose.yml  # Cloud Orchestration Setup for VPS Deployment
+└── requirements.txt    # Pinned Python dependencies
 ```
+
+> **VPS-only asset:** The `docker-compose.yml` shown in section 4 below is deployed directly onto the public cloud VPS to launch the dockerized n8n orchestrator; it is not part of this local-workstation repository.
 
 ## 4. VPS Orchestration Deployment Configuration
 

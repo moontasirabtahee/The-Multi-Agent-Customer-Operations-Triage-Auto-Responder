@@ -17,8 +17,10 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables
-load_dotenv(BASE_DIR / '.env')
+# Load environment variables. override=True so the project .env is authoritative
+# even when a machine-wide var like OLLAMA_HOST=0.0.0.0 (the Ollama *server* bind
+# address) is already exported into the shell environment.
+load_dotenv(BASE_DIR / '.env', override=True)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/

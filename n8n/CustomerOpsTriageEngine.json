@@ -27,6 +27,10 @@
         {
             "parameters": {
                 "method": "POST",
+                "url": "https://your-tunnel-subdomain.trycloudflare.com/api/v1/triage/rag/",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ text: $('Webhook').item.json.body.text }) }}",
                 "options": {}
             },
             "type": "n8n-nodes-base.httpRequest",
@@ -110,10 +114,12 @@
                 "model": {
                     "__rl": true,
                     "mode": "list",
-                    "value": "gpt-5-mini"
+                    "value": "gemma2:9b"
                 },
                 "builtInTools": {},
-                "options": {}
+                "options": {
+                    "temperature": 0
+                }
             },
             "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
             "typeVersion": 1.3,
@@ -142,8 +148,12 @@
         },
         {
             "parameters": {
+                "promptType": "define",
+                "text": "={{ $('Webhook').item.json.body.text }}",
                 "hasOutputParser": true,
-                "options": {}
+                "options": {
+                    "systemMessage": "You are an elite Operations Triage Specialist. Your sole responsibility is to analyze unstructured incoming customer communications and extract structured analytical metadata. Analyze the input text and extract parameters detailing the core topic category, calculated escalation urgency, and baseline consumer emotional state."
+                }
             },
             "type": "@n8n/n8n-nodes-langchain.agent",
             "typeVersion": 3.1,
@@ -157,9 +167,11 @@
         {
             "parameters": {
                 "promptType": "define",
-                "text": "=={{ $('Webhook').item.json.body.text }}",
+                "text": "={{ $('Webhook').item.json.body.text }}",
                 "hasOutputParser": true,
-                "options": {}
+                "options": {
+                    "systemMessage": "=You are a Risk Assessment Engineer overseeing an autonomous customer support pipeline. Your job is to determine if an incoming ticket can be safely resolved by an automated Retrieval-Augmented Generation (RAG) system, or if it must be routed to a human engineer.\n\nYou will evaluate the raw email text alongside the classification metadata provided by the preceding routing agent:\n[Classification Input Metadata]: {{ $json.category }} | {{ $json.urgency }} | {{ $json.sentiment }}\n\nRules for Autonomy:\n- If Category is BUG, set can_auto_respond to false and confidence_score below 8.0.\n- If Urgency is CRITICAL or Sentiment is ANGRY, set can_auto_respond to false.\n- If the request asks for specific database updates, credentials, or financial refunds, set can_auto_respond to false.\n- General inquiries or standard billing queries have high baseline confidence scores."
+                }
             },
             "type": "@n8n/n8n-nodes-langchain.agent",
             "typeVersion": 3.1,
@@ -175,10 +187,12 @@
                 "model": {
                     "__rl": true,
                     "mode": "list",
-                    "value": "gpt-5-mini"
+                    "value": "gemma2:9b"
                 },
                 "builtInTools": {},
-                "options": {}
+                "options": {
+                    "temperature": 0.1
+                }
             },
             "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
             "typeVersion": 1.3,
@@ -190,7 +204,10 @@
             "name": "OpenAI Chat Model1"
         },
         {
-            "parameters": {},
+            "parameters": {
+                "schemaType": "manual",
+                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"category\": { \"type\": \"string\", \"enum\": [\"BILLING\", \"BUG\", \"FEATURE_REQUEST\", \"GENERAL_INQUIRY\"], \"description\": \"Core topic category of the customer communication.\" },\n    \"urgency\": { \"type\": \"string\", \"enum\": [\"LOW\", \"MEDIUM\", \"HIGH\", \"CRITICAL\"], \"description\": \"Calculated escalation urgency.\" },\n    \"sentiment\": { \"type\": \"string\", \"enum\": [\"POSITIVE\", \"NEUTRAL\", \"FRUSTRATED\", \"ANGRY\"], \"description\": \"Baseline consumer emotional state.\" }\n  },\n  \"required\": [\"category\", \"urgency\", \"sentiment\"]\n}"
+            },
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
@@ -201,7 +218,10 @@
             "name": "Structured Output Parser"
         },
         {
-            "parameters": {},
+            "parameters": {
+                "schemaType": "manual",
+                "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"confidence_score\": { \"type\": \"number\", \"description\": \"A floating-point evaluation between 1.0 and 10.0 representing automated accuracy likelihood.\" },\n    \"can_auto_respond\": { \"type\": \"boolean\", \"description\": \"True if it can be resolved autonomously via internal documentation, false otherwise.\" },\n    \"escalation_reason\": { \"type\": [\"string\", \"null\"], \"description\": \"Text stating the core justification for human handoff if autonomous is false, otherwise null.\" }\n  },\n  \"required\": [\"confidence_score\", \"can_auto_respond\", \"escalation_reason\"]\n}"
+            },
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
@@ -210,10 +230,281 @@
             ],
             "id": "58c645ef-1127-4c3d-a986-734746208c8f",
             "name": "Structured Output Parser1"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Build the Slack Block Kit payload from the RAG draft + original ticket context.\nconst webhook = $('Webhook').item.json.body || {};\nconst draft = $json.generated_draft || '';\nconst email = webhook.sender_email || 'unknown@customer.com';\nconst query = webhook.text || '';\n\nconst body = {\n  channel: 'customer-ops-triage',\n  text: 'New high-confidence triage draft ready for review',\n  blocks: [\n    { type: 'header', text: { type: 'plain_text', text: '📥 NEW HIGH-CONFIDENCE TRIAGE DRAFT', emoji: true } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Customer:* ' + email } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Original Query:*\\n>' + query } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*AI Generated Response:*\\n```' + draft + '```' } },\n    { type: 'actions', elements: [\n      { type: 'button', text: { type: 'plain_text', text: 'Approve & Send', emoji: true }, style: 'primary', action_id: 'approve_triage_send', value: JSON.stringify({ email: email, draft: draft }) },\n      { type: 'button', text: { type: 'plain_text', text: 'Reject & Escalate', emoji: true }, style: 'danger', action_id: 'reject_triage_escalate', value: 'reject' }\n    ] }\n  ]\n};\n\nreturn [{ json: { slackBody: body } }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                832,
+                -80
+            ],
+            "id": "c0de0001-1111-4a00-9000-000000000001",
+            "name": "Build Slack Card"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://slack.com/api/chat.postMessage",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json; charset=utf-8"
+                        },
+                        {
+                            "name": "Authorization",
+                            "value": "=Bearer {{ $env.SLACK_BOT_TOKEN }}"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json.slackBody) }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [
+                1040,
+                -80
+            ],
+            "id": "51ac0002-2222-4a00-9000-000000000002",
+            "name": "Post Draft to Slack"
+        },
+        {
+            "parameters": {
+                "httpMethod": "POST",
+                "path": "slack-interactive",
+                "responseMode": "onReceived",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2.1,
+            "position": [
+                -688,
+                608
+            ],
+            "id": "51ac0003-3333-4a00-9000-000000000003",
+            "name": "Slack Interactivity",
+            "webhookId": "a7f4c1e2-9b3d-4e6a-8c5f-2d1b0a9e7c44"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Slack posts interactive events as an x-www-form-urlencoded 'payload' field.\nconst raw = $input.first().json.body ? $input.first().json.body.payload : undefined;\nconst payload = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});\nconst action = (payload.actions && payload.actions[0]) ? payload.actions[0] : {};\n\nlet meta = {};\ntry { meta = JSON.parse(action.value); } catch (e) { meta = {}; }\n\nreturn [{ json: {\n  action_id: action.action_id || '',\n  response_url: payload.response_url || '',\n  user: payload.user ? payload.user.username : '',\n  customer_email: meta.email || '',\n  draft: meta.draft || ''\n} }];"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                -432,
+                608
+            ],
+            "id": "c0de0004-4444-4a00-9000-000000000004",
+            "name": "Parse Interaction"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "a2f9c7d1-0e5b-4c3a-9f8e-1b6d4c2a0e93",
+                            "leftValue": "={{ $json.action_id }}",
+                            "rightValue": "approve_triage_send",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -176,
+                608
+            ],
+            "id": "1f000005-5555-4a00-9000-000000000005",
+            "name": "Route Approval"
+        },
+        {
+            "parameters": {
+                "fromEmail": "support@enterprise.com",
+                "toEmail": "={{ $('Parse Interaction').item.json.customer_email }}",
+                "subject": "Re: Your Support Request",
+                "emailFormat": "text",
+                "text": "={{ $('Parse Interaction').item.json.draft }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.emailSend",
+            "typeVersion": 2.1,
+            "position": [
+                96,
+                496
+            ],
+            "id": "ema10006-6666-4a00-9000-000000000006",
+            "name": "Dispatch Customer Email"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $('Parse Interaction').item.json.response_url }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ replace_original: true, text: '✅ Approved & sent to ' + $('Parse Interaction').item.json.customer_email + ' by ' + $('Parse Interaction').item.json.user }) }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [
+                352,
+                496
+            ],
+            "id": "51ac0007-7777-4a00-9000-000000000007",
+            "name": "Update Card - Approved"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "={{ $('Parse Interaction').item.json.response_url }}",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify({ replace_original: true, text: '🚫 Rejected & escalated to the human queue by ' + $('Parse Interaction').item.json.user }) }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.4,
+            "position": [
+                608,
+                720
+            ],
+            "id": "51ac0008-8888-4a00-9000-000000000008",
+            "name": "Update Card - Escalated"
+        },
+        {
+            "parameters": {
+                "project": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": ""
+                },
+                "issueType": {
+                    "__rl": true,
+                    "mode": "list",
+                    "value": ""
+                },
+                "summary": "=Rejected triage draft for {{ $('Parse Interaction').item.json.customer_email }} — escalated by {{ $('Parse Interaction').item.json.user }}",
+                "additionalFields": {
+                    "description": "=A support agent reviewed the AI-generated draft in Slack and rejected it, so this ticket was opened for manual handling.\n\nCustomer: {{ $('Parse Interaction').item.json.customer_email }}\nRejected by: {{ $('Parse Interaction').item.json.user }}\n\nRejected draft:\n{{ $('Parse Interaction').item.json.draft }}"
+                }
+            },
+            "type": "n8n-nodes-base.jira",
+            "typeVersion": 1,
+            "position": [
+                352,
+                720
+            ],
+            "id": "d768d2d8-9a10-4b22-c333-607374cf9999",
+            "name": "Create Escalation Ticket"
         }
     ],
     "pinData": {},
     "connections": {
+        "HTTP Request": {
+            "main": [
+                [
+                    {
+                        "node": "Build Slack Card",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Build Slack Card": {
+            "main": [
+                [
+                    {
+                        "node": "Post Draft to Slack",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Slack Interactivity": {
+            "main": [
+                [
+                    {
+                        "node": "Parse Interaction",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Parse Interaction": {
+            "main": [
+                [
+                    {
+                        "node": "Route Approval",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Route Approval": {
+            "main": [
+                [
+                    {
+                        "node": "Dispatch Customer Email",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Create Escalation Ticket",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create Escalation Ticket": {
+            "main": [
+                [
+                    {
+                        "node": "Update Card - Escalated",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Dispatch Customer Email": {
+            "main": [
+                [
+                    {
+                        "node": "Update Card - Approved",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
         "Switch": {
             "main": [
                 [

@@ -1,0 +1,13 @@
+# Core web framework
+Django==5.2.16
+djangorestframework==3.17.1
+
+# LlamaIndex RAG stack (local Ollama + pgvector)
+llama-index-core==0.14.23
+llama-index-llms-ollama==0.10.1
+llama-index-embeddings-ollama==0.9.0
+llama-index-vector-stores-postgres==0.8.1
+
+# PostgreSQL driver & configuration
+psycopg2-binary==2.9.12
+python-dotenv==1.2.2

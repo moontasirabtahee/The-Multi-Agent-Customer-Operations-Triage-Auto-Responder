@@ -1,0 +1,22 @@
+ACCOUNT MANAGEMENT GUIDE
+
+Creating User Accounts:
+Workspace administrators can invite new users from Settings > Team > Invite Members. Invited users receive an email with an activation link that expires after 72 hours. If the link expires, an administrator can resend the invitation.
+
+Roles and Permissions:
+The platform supports four roles: Owner, Administrator, Member, and Read-Only. Only Owners can transfer workspace ownership or delete the workspace. Administrators can manage users, billing, and integrations. Members can create and edit content. Read-Only users can view but not modify.
+
+Resetting a Password:
+Users can reset their own password from the login page by clicking "Forgot Password" and entering their registered email. A reset link valid for 60 minutes is sent to that address. Administrators cannot view or set passwords directly for security reasons.
+
+Enabling Two-Factor Authentication (2FA):
+Users can enable 2FA under Settings > Security > Two-Factor Authentication. We support authenticator apps (TOTP) and hardware security keys. Enterprise Owners can enforce mandatory 2FA for all workspace members under Settings > Security > Enforcement.
+
+Transferring Workspace Ownership:
+Only the current Owner can transfer ownership. Navigate to Settings > Team, select the target administrator, and choose "Transfer Ownership". The action requires re-entering the current Owner's password and cannot be undone without a new transfer.
+
+Deactivating or Removing Users:
+Administrators can deactivate a user from Settings > Team. Deactivated users lose access immediately but their content and history are preserved. Fully removing a user permanently reassigns their owned content to the workspace Owner.
+
+Closing an Account:
+To close a workspace, the Owner must submit a request from Settings > Account > Close Workspace. Account closure is irreversible and triggers deletion of all associated data after a 30-day grace period.

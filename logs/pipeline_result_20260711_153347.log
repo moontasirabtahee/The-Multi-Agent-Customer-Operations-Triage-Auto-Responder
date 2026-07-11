@@ -1,0 +1,13 @@
+﻿Multi-Agent Triage RAG - Smoke Test Result
+Run: 20260711_153347   Model: gemma4:e2b   Embed: nomic-embed-text
+======================================================================
+
+### IN-KB (should answer from knowledge base)
+Query: What is your refund policy if server uptime falls below 99.9% in a quarter?
+Status: success   Sources matched: 3
+Draft : Customers are eligible for a 10% refund on their monthly subscription fee for each affected month if server uptime falls below 99.9% in a given quarter. Refund requests must be sent to billing@enterprise.com within 30 days of the quarter ending and must reference the affected account ID.
+
+### OUT-OF-KB (should return ESCALATE_TO_HUMAN)
+Query: What color options are available for the mobile app icon?
+Status: success   Sources matched: 3
+Draft : ESCALATE_TO_HUMAN

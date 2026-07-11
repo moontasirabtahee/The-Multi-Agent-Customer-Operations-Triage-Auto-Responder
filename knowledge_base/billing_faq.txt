@@ -1,0 +1,22 @@
+ENTERPRISE BILLING FAQ
+
+Uptime & Refund Policy:
+We guarantee a 99.9% server uptime measured per calendar quarter. If server uptime falls below 99.9% in a given quarter, customers are eligible for a 10% refund on their monthly subscription fee for each affected month. Refund requests must be sent to billing@enterprise.com within 30 days of the quarter ending, and must reference the affected account ID.
+
+Billing Cycle:
+All plans are billed on a recurring monthly or annual cycle. Monthly plans renew on the same calendar day each month. Annual plans renew on the anniversary of the original purchase date. Invoices are generated automatically and emailed to the primary billing contact on file.
+
+Accepted Payment Methods:
+We accept Visa, Mastercard, American Express, and ACH bank transfer for annual enterprise contracts. Wire transfer is available for contracts over $25,000 per year. We do not accept payment by cheque.
+
+Updating Payment Information:
+Customers can update their payment card by navigating to Settings > Billing > Payment Method. Changes take effect on the next billing cycle. For ACH or wire details, contact billing@enterprise.com.
+
+Failed Payments:
+If a payment fails, we automatically retry the charge three times over seven days. The account remains active during this grace period. If all retries fail, the account is downgraded to read-only until payment is resolved.
+
+Plan Upgrades and Downgrades:
+Upgrades take effect immediately and are prorated for the remainder of the current billing cycle. Downgrades take effect at the start of the next billing cycle. No refunds are issued for mid-cycle downgrades.
+
+Invoices and Receipts:
+Copies of all past invoices are available under Settings > Billing > Invoice History. Invoices can be downloaded as PDF. To add a VAT or tax ID to your invoices, update it under Settings > Billing > Company Details.

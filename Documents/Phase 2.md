@@ -152,7 +152,33 @@ This blueprint represents the layout and sub-node attachment mappings inside you
   * Expression Statement: `={{ $json.can_auto_respond === false || $json.confidence_score < 8 }}`  
   * Route Destination: Create an issue Node -> Jira Operations Backlog.
 
-## 5. End-to-End Verification Check
+## 5. Connecting Real Email to the Webhook
+
+The pipeline entry point is the **Webhook** node, which expects a JSON body shaped like:
+
+```json
+{ "text": "<the customer's message body>", "sender_email": "customer@domain.com" }
+```
+
+Anything that can produce that shape can feed the engine. Two practical ways to turn an inbox into webhook traffic:
+
+### Option A — n8n Email Trigger (IMAP) *(simplest, fully inside n8n)*
+Add an **Email Trigger (IMAP)** node configured against your support mailbox (Gmail/Outlook/any IMAP). On each new message it emits the parsed email. Follow it with a **Set / Edit Fields** node that maps the provider's fields onto the contract, then wire that into the **AI Agent (Classifier)**:
+
+* `text` ← `={{ $json.text || $json.textPlain || $json.snippet }}`
+* `sender_email` ← `={{ $json.from.value[0].address }}`
+
+> If you use the IMAP trigger *instead of* the Webhook node, update the downstream `$('Webhook').item.json.body.*` expressions to reference the Set node instead. Keeping the Webhook node and calling it from a separate mail flow (Option B) avoids that rewrite.
+
+### Option B — Inbound-email service → Webhook POST *(keeps the HTTP contract)*
+Point an inbound-email provider at the n8n webhook URL so it POSTs each received email as JSON. Common choices:
+
+* **Gmail:** a Gmail Trigger node, or a Google Apps Script `onEmail` forwarder.
+* **SendGrid Inbound Parse**, **Mailgun Routes**, or **Postmark inbound** — configure the parse webhook to `https://your-vps-n8n-url.com/webhook/triage` and map their multipart fields to `text` / `sender_email`.
+
+This keeps the Webhook node as the stable, testable seam (you can always `curl` it), while production email arrives through the provider.
+
+## 6. End-to-End Verification Check
 
 To confirm code execution success, trigger the webhook using an integrated REST client (e.g., Postman or curl via terminal):  
 

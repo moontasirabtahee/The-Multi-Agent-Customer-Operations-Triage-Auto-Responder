@@ -29,7 +29,7 @@ if not exist ".venv" (
 echo.
 echo Installing and upgrading dependencies...
 .venv\Scripts\python -m pip install --upgrade pip
-.venv\Scripts\pip install django djangorestframework llama-index-core llama-index-llms-ollama llama-index-embeddings-ollama llama-index-vector-stores-postgres psycopg2-binary python-dotenv
+.venv\Scripts\pip install -r requirements.txt
 
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to install dependencies.

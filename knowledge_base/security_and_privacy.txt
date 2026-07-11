@@ -1,0 +1,22 @@
+SECURITY AND DATA PRIVACY POLICY
+
+Data Encryption:
+All customer data is encrypted in transit using TLS 1.2 or higher, and encrypted at rest using AES-256. Encryption keys are managed through a dedicated key management service and rotated automatically on a 90-day cycle.
+
+Data Residency:
+Enterprise customers can choose to host their data in the United States, the European Union, or Australia. Data residency is selected during onboarding and cannot be changed afterward without a full data migration coordinated with our support team.
+
+Compliance Certifications:
+The platform is SOC 2 Type II certified and undergoes an annual third-party audit. We are GDPR compliant and offer a Data Processing Addendum (DPA) to all enterprise customers. HIPAA compliance is available on the Enterprise Plus plan with a signed Business Associate Agreement (BAA).
+
+Data Retention and Deletion:
+Active account data is retained for the life of the subscription. When an account is closed, data enters a 30-day grace period, after which it is permanently deleted from production systems. Backups are purged within an additional 60 days.
+
+Access Logs and Auditing:
+Administrators can view an immutable audit log of user activity under Settings > Security > Audit Log. Logs include sign-ins, permission changes, and data exports, and are retained for 12 months. Enterprise Plus customers can stream logs to an external SIEM.
+
+Reporting a Security Vulnerability:
+Suspected vulnerabilities should be reported to security@enterprise.com. We operate a responsible disclosure program and aim to acknowledge reports within one business day. Do not include live customer credentials in any report.
+
+Sub-processors:
+A current list of third-party sub-processors is published at enterprise.com/subprocessors. Customers subscribed to security notifications are informed at least 30 days before any new sub-processor is added.

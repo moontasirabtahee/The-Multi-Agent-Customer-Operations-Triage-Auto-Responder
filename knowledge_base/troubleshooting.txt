@@ -1,0 +1,22 @@
+COMMON TROUBLESHOOTING GUIDE
+
+Clearing the Application Cache:
+If the interface displays stale data or fails to load, clear the local application cache from Settings > Advanced > Clear Cache. This removes cached content only and does not delete any of your account data. After clearing, reload the page.
+
+Login Problems:
+If you cannot sign in, first confirm you are using the correct workspace URL. If your password is not accepted, use "Forgot Password" to reset it. If you have 2FA enabled and lost your device, contact an administrator to reset your second factor.
+
+Exports Not Arriving:
+Large data exports are generated asynchronously and delivered by email when complete. Exports can take up to 30 minutes for large workspaces. Check your spam folder, and confirm the email address on your profile is correct. If an export has not arrived after one hour, contact support.
+
+Slow Performance:
+Performance issues are most often caused by browser extensions or an outdated browser. Try disabling extensions and updating to the latest version of Chrome, Edge, Firefox, or Safari. Our platform does not support Internet Explorer.
+
+Notifications Not Received:
+If you are not receiving email notifications, verify your notification preferences under Settings > Notifications. Also confirm that emails from @enterprise.com are not being blocked by your mail server or filtered as spam.
+
+Sync Errors With Integrations:
+If a connected integration stops syncing, reconnect it from Settings > Integrations by clicking "Reconnect". This refreshes the authorization token. Sync errors are frequently caused by an expired or revoked token on the connected service.
+
+Contacting Support:
+For issues not resolved by this guide, contact support@enterprise.com. Include your workspace URL, the affected user's email, a description of the problem, and the approximate time it occurred so we can locate the relevant logs.

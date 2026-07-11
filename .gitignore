@@ -16,6 +16,10 @@ backend/.env
 db.sqlite3
 *.db
 
+# Run logs: keep pipeline_result_*.log (portfolio proof), ignore runtime noise
+logs/django_*.log
+logs/*.log.err
+
 # Django local media/static
 /static/
 /media/

@@ -1,0 +1,22 @@
+API AND INTEGRATIONS REFERENCE
+
+API Access:
+The REST API is available on the Business and Enterprise plans. Base URL is https://api.enterprise.com/v1. All requests must be made over HTTPS. Requests over plain HTTP are rejected.
+
+Authentication:
+API requests are authenticated with a bearer token. Generate a token under Settings > Developer > API Keys. Include it in the Authorization header as "Bearer <token>". Keys can be scoped to read-only or read-write and can be revoked at any time from the same screen.
+
+Rate Limits:
+The default rate limit is 600 requests per minute per API key on the Business plan and 3,000 requests per minute on the Enterprise plan. When the limit is exceeded, the API returns HTTP 429 with a Retry-After header indicating how many seconds to wait before retrying.
+
+Webhooks:
+You can register webhook endpoints under Settings > Developer > Webhooks. We send a POST request with a JSON body for each subscribed event. Each request is signed with an HMAC-SHA256 signature in the X-Signature header so you can verify authenticity. Failed deliveries are retried up to five times with exponential backoff.
+
+Supported Native Integrations:
+The platform offers native integrations for Slack, Microsoft Teams, Jira, Salesforce, HubSpot, and Google Workspace. Integrations are configured under Settings > Integrations. Connecting an integration requires administrator permissions.
+
+Pagination:
+List endpoints return a maximum of 100 records per page. Use the "cursor" query parameter with the value from "next_cursor" in the previous response to fetch subsequent pages.
+
+Sandbox Environment:
+Enterprise customers receive a separate sandbox workspace for testing API changes. Sandbox data is isolated from production and is reset every 30 days.

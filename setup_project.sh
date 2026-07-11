@@ -27,7 +27,7 @@ fi
 echo
 echo "Installing and upgrading dependencies..."
 .venv/bin/python -m pip install --upgrade pip
-.venv/bin/pip install django djangorestframework llama-index-core llama-index-llms-ollama llama-index-embeddings-ollama llama-index-vector-stores-postgres psycopg2-binary python-dotenv
+.venv/bin/pip install -r requirements.txt
 
 if [ $? -ne 0 ]; then
     echo "[ERROR] Failed to install dependencies."

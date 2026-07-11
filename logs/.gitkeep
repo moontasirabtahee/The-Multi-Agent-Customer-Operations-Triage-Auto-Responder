@@ -1,0 +1,2 @@
+# Run logs are written here by bootstrap.ps1 (django_*.log, pipeline_result_*.log).
+# Commit a pipeline_result_*.log as portfolio proof-of-run; ignore the rest if you like.

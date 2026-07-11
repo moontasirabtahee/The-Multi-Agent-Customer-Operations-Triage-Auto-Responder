@@ -1,6 +1,7 @@
 import os
 import sys
 import psycopg2
+from psycopg2 import sql
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -8,10 +9,14 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(str(BASE_DIR))
 
-# Load environment variables
-load_dotenv(BASE_DIR / '.env')
+# Load environment variables. override=True so the project .env is authoritative
+# even when a machine-wide var like OLLAMA_HOST=0.0.0.0 (the Ollama *server* bind
+# address) is already exported into the shell environment.
+load_dotenv(BASE_DIR / '.env', override=True)
 
-from llama_index.core import SimpleDirectoryReader, StorageContext, VectorStoreIndex
+from llama_index.core import SimpleDirectoryReader
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.schema import MetadataMode
 from llama_index.vector_stores.postgres import PGVectorStore
 from llama_index.embeddings.ollama import OllamaEmbedding
 
@@ -50,12 +55,14 @@ def check_and_initialize_vector_db():
         conn.autocommit = True
         cursor = conn.cursor()
         
-        # Check if target DB exists, create if not
-        cursor.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{db_name}';")
+        # Check if target DB exists, create if not.
+        # Use a bound parameter for the value and a quoted identifier for the
+        # database name so the configured DB_NAME cannot inject SQL.
+        cursor.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = %s;", (db_name,))
         exists = cursor.fetchone()
         if not exists:
             print(f"Database '{db_name}' does not exist. Creating...")
-            cursor.execute(f"CREATE DATABASE {db_name};")
+            cursor.execute(sql.SQL("CREATE DATABASE {};").format(sql.Identifier(db_name)))
         cursor.close()
         conn.close()
         
@@ -94,10 +101,10 @@ def check_and_initialize_vector_db():
         print(f"Loaded {len(documents)} document(s). Initializing LlamaIndex and generating embeddings...")
         
         # Instantiate local Ollama Embedding
-        ollama_host = os.getenv('OLLAMA_HOST', 'http://localhost:11434')
+        ollama_host = os.getenv('OLLAMA_HOST', 'http://127.0.0.1:11434')
         embed_model_name = os.getenv('OLLAMA_EMBED_MODEL', 'nomic-embed-text')
         embed_model = OllamaEmbedding(model_name=embed_model_name, base_url=ollama_host)
-        
+
         # Mount pgvector store
         vector_store = PGVectorStore.from_params(
             host=db_host,
@@ -108,16 +115,21 @@ def check_and_initialize_vector_db():
             table_name="enterprise_knowledge_matrix",
             embed_dim=768
         )
-        
-        storage_context = StorageContext.from_defaults(vector_store=vector_store)
-        
-        # This compiles the index and saves the embedded vectors directly into Postgres
-        VectorStoreIndex.from_documents(
-            documents,
-            storage_context=storage_context,
-            embed_model=embed_model,
-            show_progress=True
-        )
+
+        # Split documents into nodes, then embed each node sequentially with a
+        # blocking (synchronous) call. LlamaIndex's default from_documents() path
+        # fans embedding requests out concurrently over async HTTP, which Ollama
+        # intermittently rejects with "Failed to connect". Embedding one node at a
+        # time is fully deterministic and fast enough for a knowledge base seed.
+        nodes = SentenceSplitter().get_nodes_from_documents(documents)
+        print(f"Split into {len(nodes)} node(s). Embedding sequentially...")
+        for i, node in enumerate(nodes, start=1):
+            node.embedding = embed_model.get_text_embedding(
+                node.get_content(metadata_mode=MetadataMode.EMBED)
+            )
+            print(f"  embedded node {i}/{len(nodes)}")
+
+        vector_store.add(nodes)
         print("Database successfully seeded and vector index created.")
         
     except Exception as e:
