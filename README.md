@@ -4,6 +4,19 @@ An enterprise-grade, hybrid-deployed customer support automation engine. The sys
 
 ---
 
+## 📋 Portfolio Repository Architecture Manual
+
+| Phase / Component | Key Configuration File / Location | Tech Stack | Infrastructure / Deployment Layer | Core Role / Function |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Ingress & Routing Orchestrator** | [`n8n/CustomerOpsTriageEngine.json`](n8n/CustomerOpsTriageEngine.json) | n8n, Docker, Cloudflare Tunnel | Public Cloud VPS (`hstgr.cloud`) | Receives incoming webhooks, drives the agentic logic, maps Slack buttons, and dispatches SMTP emails. |
+| **2. Email Ingress Pull Layer** | [Google Apps Script (`N8N_CONFIG.md`)](N8N_CONFIG.md) | JavaScript, GmailApp API | Google Cloud (Time-driven cron trigger) | Periodically polls Gmail, filters for new unread messages today, and forwards them to n8n Webhook. |
+| **3. RAG Core API Engine** | [`backend/triage_api/`](backend/triage_api/) | Django, LlamaIndex, PostgreSQL, pgvector | Local Workstation (exposed via Cloudflare Tunnel) | Manages enterprise vector index, matches context queries, and generates auto-response drafts. |
+| **4. Local LLM Inference** | [`backend/.env`](backend/.env) (model settings) | Ollama (`gemma4b:2B` / `llama3.2`) | Local Workstation (exposed via Cloudflare Tunnel) | Generates structured classification, executes risk assessment, and formats support replies. |
+| **5. Governance & HITL Approval** | [`Documents/Phase 4.md`](Documents/Phase%204.md) | Slack Block Kit UI, Slack Interactive Webhooks | Slack Cloud / n8n Webhook | Renders draft cards to Slack team channel and captures manual Send/Reject buttons. |
+| **6. Escalation Queue** | [`n8n/CustomerOpsTriageEngine.json`](n8n/CustomerOpsTriageEngine.json) | Jira Software API | Jira Cloud Platform | Automatically creates structured Epic/Task tickets for manual engineering review on RAG bypass. |
+
+---
+
 ## 🛠️ Hybrid System Architecture Overview
 
 The project is structured around a decoupled **Hybrid Infrastructure Strategy**:
@@ -14,7 +27,7 @@ The project is structured around a decoupled **Hybrid Infrastructure Strategy**:
 
 ## 📅 Project Implementation Phases
 
-This project is organized into four technical implementation phases. Click the links below to view the detailed architecture specifications for each phase:
+This project is organized into five technical implementation phases. Click the links below to view the detailed architecture specifications for each phase:
 
 * **[Phase 1: Hybrid Infrastructure Setup](Documents/Phase%201.md)**
   * Details the network topology, cloud VPS deployment with Docker Compose, encrypted Cloudflare reverse tunnels, and core JSON data contracts.
@@ -24,6 +37,8 @@ This project is organized into four technical implementation phases. Click the l
   * Details the local LlamaIndex ingestion pipeline, pgvector database layout, Django API endpoints, and strict system guardrails to prevent hallucinations.
 * **[Phase 4: Governance Layer (Slack HITL Integration)](Documents/Phase%204.md)**
   * Details the Slack App workspace configuration, Block Kit interactive message UI, and asynchronous webhook handshakes for human approval.
+* **[Phase 5: Closure, Optimization, & Presentation](Documents/Phase%205.md)**
+  * Details complete workflow termination via SMTP dispatch, safety fallback paths for insufficient database documentation, and operational test parameters.
 
 ---
 
@@ -36,7 +51,8 @@ This project is organized into four technical implementation phases. Click the l
 │   ├── Phase 1.md              # Ingress Orchestration & Network Setup
 │   ├── Phase 2.md              # n8n Routing & Agent Prompts
 │   ├── Phase 3.md              # Django & LlamaIndex RAG Engine
-│   └── Phase 4.md              # Slack HITL Governance Layer
+│   ├── Phase 4.md              # Slack HITL Governance Layer
+│   └── Phase 5.md              # Closure, Fallbacks & Presentation
 │
 ├── /backend
 │   ├── /backend                # Django configuration & settings
