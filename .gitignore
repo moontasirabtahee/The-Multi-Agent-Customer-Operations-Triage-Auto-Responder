@@ -19,6 +19,7 @@ db.sqlite3
 # Run logs: keep pipeline_result_*.log (portfolio proof), ignore runtime noise
 logs/django_*.log
 logs/*.log.err
+logs/tunnel_*
 
 # Django local media/static
 /static/

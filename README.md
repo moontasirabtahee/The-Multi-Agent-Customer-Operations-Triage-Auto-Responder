@@ -55,12 +55,8 @@ This project is organized into four technical implementation phases. Click the l
 │
 ├── README.md                   # Master Repository Presentation & Index (This File)
 ├── requirements.txt            # Pinned Python dependencies
-├── bootstrap.ps1               # One-command fresh-PC bring-up (venv, DB, seed, run, smoke test)
-├── bootstrap.bat               # Double-clickable wrapper for bootstrap.ps1
-├── setup_project.bat           # (Legacy) Windows venv & dependency-only setup
-├── setup_project.sh            # (Legacy) Unix venv & dependency-only setup
-├── run_tunnel.bat              # Cloudflare reverse tunnel launcher (Django API)
-└── run_tunnel_ollama.bat       # Cloudflare reverse tunnel launcher (Ollama LLM)
+├── N8N_CONFIG.md               # Node-by-node n8n configuration reference
+└── pipeline.ps1                # Single script: setup + Ollama + tunnels + run (and -Stop)
 ```
 
 ---
@@ -83,28 +79,28 @@ The bootstrap script provisions *everything else*, but these are your responsibi
 4. **Gmail + Google Apps Script:** Set up a time-driven script in Google Apps Script to pull unread emails and forward them to your VPS n8n webhook.
 
 
-### Run it
-From the repository root:
+### Run it — one script does everything
+From the repository root, `pipeline.ps1` handles the **entire** lifecycle: venv, deps,
+`.env` + `SECRET_KEY`, pgvector container, migrations, knowledge-base seed, starts Ollama
+if needed, starts the Django API, runs a smoke test, opens **both Cloudflare tunnels**
+(Django + Ollama), and prints the exact values to paste into n8n.
 
 ```powershell
-# Windows — sets up venv, deps, .env + SECRET_KEY, pgvector container,
-# migrations, seeds the knowledge base, then runs a smoke test and writes
-# logs/pipeline_result_<timestamp>.log
-powershell -ExecutionPolicy Bypass -File .\bootstrap.ps1
-#   ...or just double-click bootstrap.bat
+powershell -ExecutionPolicy Bypass -File .\pipeline.ps1
 ```
-
-Useful flags:
 
 | Command | What it does |
 | :--- | :--- |
-| `.\bootstrap.ps1` | Full setup + smoke test, then stops Django (produces the result log) |
-| `.\bootstrap.ps1 -Serve -Port 8520` | Full setup, then **leaves Django running** on port 8520 for live use / tunneling |
-| `.\bootstrap.ps1 -Reseed` | Re-embed the knowledge base even if the vector store is already populated |
+| `.\pipeline.ps1` | Full setup + start everything + open tunnels (port 8520) |
+| `.\pipeline.ps1 -Port 8000` | Same, on a different Django port |
+| `.\pipeline.ps1 -NoTunnel` | Start locally without opening Cloudflare tunnels |
+| `.\pipeline.ps1 -Reseed` | Re-embed the knowledge base before starting |
+| `.\pipeline.ps1 -Stop` | Tear down Django + both tunnels + the DB container (Ollama left running) |
 
-A successful `logs/pipeline_result_*.log` shows an in-KB query answered from the knowledge base and an out-of-KB query correctly returning `ESCALATE_TO_HUMAN`.
-
-> The legacy `setup_project.bat` / `setup_project.sh` scripts still exist but only create the venv and install dependencies — `bootstrap.ps1` supersedes them for a full bring-up.
+When it finishes, it prints a **"UPDATE THESE IN n8n"** block with the two fresh tunnel
+URLs — the quick-tunnel hostnames change every run, so re-paste them into the workflow
+each time (see next section). A successful `logs/pipeline_result_*.log` records the
+smoke-test answer as portfolio proof-of-run.
 
 ---
 
