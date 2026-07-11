@@ -256,7 +256,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Build the Slack Block Kit payload from the RAG draft + original ticket context.\nconst webhook = $('Webhook').item.json.body || {};\nconst draft = $json.generated_draft || '';\nconst email = webhook.sender_email || 'unknown@customer.com';\nconst query = webhook.text || '';\n\nconst body = {\n  channel: 'customer-ops-triage',\n  text: 'New high-confidence triage draft ready for review',\n  blocks: [\n    { type: 'header', text: { type: 'plain_text', text: '📥 NEW HIGH-CONFIDENCE TRIAGE DRAFT', emoji: true } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Customer:* ' + email } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Original Query:*\\n>' + query } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*AI Generated Response:*\\n```' + draft + '```' } },\n    { type: 'actions', elements: [\n      { type: 'button', text: { type: 'plain_text', text: 'Approve & Send', emoji: true }, style: 'primary', action_id: 'approve_triage_send', value: JSON.stringify({ email: email, draft: draft }) },\n      { type: 'button', text: { type: 'plain_text', text: 'Reject & Escalate', emoji: true }, style: 'danger', action_id: 'reject_triage_escalate', value: 'reject' }\n    ] }\n  ]\n};\n\nreturn [{ json: { slackBody: body } }];"
+                "jsCode": "// Build the Slack Block Kit payload from the RAG draft + original ticket context.\nconst webhook = $('Webhook').first().json.body || {};\nconst draft = $input.first().json.generated_draft || '';\nconst email = webhook.sender_email || 'unknown@customer.com';\nconst query = webhook.text || '';\nconst subject = webhook.subject || '';\n\nconst body = {\n  channel: 'customer-ops-triage',\n  text: 'New high-confidence triage draft ready for review',\n  blocks: [\n    { type: 'header', text: { type: 'plain_text', text: '📥 NEW HIGH-CONFIDENCE TRIAGE DRAFT', emoji: true } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Customer:* ' + email } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*Original Query:*\\n>' + query } },\n    { type: 'section', text: { type: 'mrkdwn', text: '*AI Generated Response:*\\n```' + draft + '```' } },\n    { type: 'actions', elements: [\n      { type: 'button', text: { type: 'plain_text', text: 'Approve & Send', emoji: true }, style: 'primary', action_id: 'approve_triage_send', value: JSON.stringify({ email: email, draft: draft, subject: subject }) },\n      { type: 'button', text: { type: 'plain_text', text: 'Reject & Escalate', emoji: true }, style: 'danger', action_id: 'reject_triage_escalate', value: 'reject' }\n    ] }\n  ]\n};\n\nreturn [{ json: { slackBody: body } }];"
             },
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
@@ -316,7 +316,7 @@
         },
         {
             "parameters": {
-                "jsCode": "// Slack posts interactive events as an x-www-form-urlencoded 'payload' field.\nconst raw = $input.first().json.body ? $input.first().json.body.payload : undefined;\nconst payload = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});\nconst action = (payload.actions && payload.actions[0]) ? payload.actions[0] : {};\n\nlet meta = {};\ntry { meta = JSON.parse(action.value); } catch (e) { meta = {}; }\n\nreturn [{ json: {\n  action_id: action.action_id || '',\n  response_url: payload.response_url || '',\n  user: payload.user ? payload.user.username : '',\n  customer_email: meta.email || '',\n  draft: meta.draft || '',\n  validatedDraftText: meta.draft || ''\n} }];"
+                "jsCode": "// Slack posts interactive events as an x-www-form-urlencoded 'payload' field.\nconst raw = $input.first().json.body ? $input.first().json.body.payload : undefined;\nconst payload = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});\nconst action = (payload.actions && payload.actions[0]) ? payload.actions[0] : {};\n\nlet meta = {};\ntry { meta = JSON.parse(action.value); } catch (e) { meta = {}; }\n\nreturn [{ json: {\n  action_id: action.action_id || '',\n  response_url: payload.response_url || '',\n  user: payload.user ? payload.user.username : '',\n  customer_email: meta.email || '',\n  draft: meta.draft || '',\n  validatedDraftText: meta.draft || '',\n  subject: meta.subject || ''\n} }];"
             },
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
@@ -363,10 +363,10 @@
         {
             "parameters": {
                 "fromEmail": "support@enterprise.com",
-                "toEmail": "={{ $('Webhook').item.json.body.sender_email }}",
-                "subject": "=Re: {{ $('Webhook').item.json.body.subject || 'Your Support Request' }}",
+                "toEmail": "={{ $('Parse Interaction').item.json.customer_email }}",
+                "subject": "=Re: {{ $('Parse Interaction').item.json.subject || 'Your Support Request' }}",
                 "emailFormat": "text",
-                "text": "={{ $json.validatedDraftText }}",
+                "text": "={{ $('Parse Interaction').item.json.validatedDraftText }}",
                 "options": {}
             },
             "type": "n8n-nodes-base.emailSend",
