@@ -5,29 +5,38 @@
             "parameters": {
                 "project": {
                     "__rl": true,
+                    "value": "10001",
                     "mode": "list",
-                    "value": ""
+                    "cachedResultName": "Customer Ops Triage Engine"
                 },
                 "issueType": {
                     "__rl": true,
+                    "value": "10006",
                     "mode": "list",
-                    "value": ""
+                    "cachedResultName": "Task"
                 },
+                "summary": "ADD",
                 "additionalFields": {}
             },
             "type": "n8n-nodes-base.jira",
             "typeVersion": 1,
             "position": [
-                640,
-                128
+                -1360,
+                592
             ],
-            "id": "d768d2d8-7e25-40bd-b1f3-607374cf124b",
-            "name": "Create an issue"
+            "id": "12ec5732-44e2-4d60-bdc7-d0a97d00b1f8",
+            "name": "Create an issue",
+            "credentials": {
+                "jiraSoftwareCloudApi": {
+                    "id": "KZp27YAHhmZlJlXg",
+                    "name": "Jira SW Cloud account"
+                }
+            }
         },
         {
             "parameters": {
                 "method": "POST",
-                "url": "https://your-tunnel-subdomain.trycloudflare.com/api/v1/triage/rag/",
+                "url": "https://programme-fri-online-cal.trycloudflare.com/api/v1/triage/rag/",
                 "sendBody": true,
                 "specifyBody": "json",
                 "jsonBody": "={{ JSON.stringify({ text: $('Webhook').item.json.body.text }) }}",
@@ -36,10 +45,10 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.4,
             "position": [
-                640,
-                -80
+                -1360,
+                384
             ],
-            "id": "99d10a7e-e922-45e9-9552-2a1a7d829e2a",
+            "id": "dd7c48fa-00ca-4a9c-9db7-c60088e7f5b8",
             "name": "HTTP Request"
         },
         {
@@ -103,10 +112,10 @@
             "type": "n8n-nodes-base.switch",
             "typeVersion": 3.4,
             "position": [
-                432,
-                16
+                -1568,
+                480
             ],
-            "id": "7454d227-0d05-4d00-8423-68f7b18e4f05",
+            "id": "7887b599-f915-4eda-b76f-8e906cc724c9",
             "name": "Switch"
         },
         {
@@ -114,7 +123,7 @@
                 "model": {
                     "__rl": true,
                     "mode": "list",
-                    "value": "gemma2:9b"
+                    "value": "gemma4b:2B"
                 },
                 "builtInTools": {},
                 "options": {
@@ -124,11 +133,17 @@
             "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
             "typeVersion": 1.3,
             "position": [
-                -272,
-                176
+                -2272,
+                640
             ],
-            "id": "36331d0a-5de1-4800-a018-c1369a69b9a1",
-            "name": "OpenAI Chat Model"
+            "id": "0af5137a-84d5-4438-9555-5df5e447b884",
+            "name": "OpenAI Chat Model",
+            "credentials": {
+                "openAiApi": {
+                    "id": "EguLb9oRlFKFC6Xu",
+                    "name": "OpenAI account"
+                }
+            }
         },
         {
             "parameters": {
@@ -139,10 +154,10 @@
             "type": "n8n-nodes-base.webhook",
             "typeVersion": 2.1,
             "position": [
-                -688,
-                16
+                -2688,
+                480
             ],
-            "id": "0de494d9-0052-40f4-a904-cc4f64842827",
+            "id": "294e8d83-4629-4660-a53a-ca3f5056ddac",
             "name": "Webhook",
             "webhookId": "b88cbe4e-11e8-4d69-a7f7-df1721290b67"
         },
@@ -158,10 +173,10 @@
             "type": "@n8n/n8n-nodes-langchain.agent",
             "typeVersion": 3.1,
             "position": [
-                -256,
-                16
+                -2256,
+                480
             ],
-            "id": "148c5146-acfb-438e-822a-2f861aca30b8",
+            "id": "6a399dd0-31d6-4e60-8475-57120a43b09f",
             "name": "AI Agent"
         },
         {
@@ -176,10 +191,10 @@
             "type": "@n8n/n8n-nodes-langchain.agent",
             "typeVersion": 3.1,
             "position": [
-                80,
-                16
+                -1920,
+                480
             ],
-            "id": "9d74a958-4156-4c2f-b937-5178f06f8be7",
+            "id": "e29383e9-761a-4f62-adfd-8b1f11b01425",
             "name": "AI Agent1"
         },
         {
@@ -187,7 +202,7 @@
                 "model": {
                     "__rl": true,
                     "mode": "list",
-                    "value": "gemma2:9b"
+                    "value": "gemma4b:2B"
                 },
                 "builtInTools": {},
                 "options": {
@@ -197,11 +212,17 @@
             "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
             "typeVersion": 1.3,
             "position": [
-                64,
-                208
+                -1936,
+                672
             ],
-            "id": "648bf6a1-5b32-41e1-9a29-9b785b6e680c",
-            "name": "OpenAI Chat Model1"
+            "id": "20eb4741-3356-46fa-b9fe-4947574ef369",
+            "name": "OpenAI Chat Model1",
+            "credentials": {
+                "openAiApi": {
+                    "id": "EguLb9oRlFKFC6Xu",
+                    "name": "OpenAI account"
+                }
+            }
         },
         {
             "parameters": {
@@ -211,10 +232,10 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                -112,
-                304
+                -2112,
+                768
             ],
-            "id": "b9fbfbfe-4dd8-4913-ab5d-8494ca73f082",
+            "id": "aa64e38d-c379-4e37-8f5d-797882d6b997",
             "name": "Structured Output Parser"
         },
         {
@@ -225,10 +246,10 @@
             "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
             "typeVersion": 1.3,
             "position": [
-                224,
-                288
+                -1776,
+                752
             ],
-            "id": "58c645ef-1127-4c3d-a986-734746208c8f",
+            "id": "2430c58e-d4ef-4b57-8380-1ade5298bfc3",
             "name": "Structured Output Parser1"
         },
         {
@@ -238,10 +259,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                832,
-                -80
+                -1168,
+                384
             ],
-            "id": "c0de0001-1111-4a00-9000-000000000001",
+            "id": "122aa2dc-a683-4332-9ec3-8f71565bcfd6",
             "name": "Build Slack Card"
         },
         {
@@ -269,26 +290,25 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.4,
             "position": [
-                1040,
-                -80
+                -960,
+                384
             ],
-            "id": "51ac0002-2222-4a00-9000-000000000002",
+            "id": "95a95d43-c14b-4c0c-9fe1-ece5a856beee",
             "name": "Post Draft to Slack"
         },
         {
             "parameters": {
                 "httpMethod": "POST",
                 "path": "slack-interactive",
-                "responseMode": "onReceived",
                 "options": {}
             },
             "type": "n8n-nodes-base.webhook",
             "typeVersion": 2.1,
             "position": [
-                -688,
-                608
+                -2688,
+                1072
             ],
-            "id": "51ac0003-3333-4a00-9000-000000000003",
+            "id": "b4205bd8-dff4-4337-ae40-95b4096b2ebb",
             "name": "Slack Interactivity",
             "webhookId": "a7f4c1e2-9b3d-4e6a-8c5f-2d1b0a9e7c44"
         },
@@ -299,10 +319,10 @@
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [
-                -432,
-                608
+                -2432,
+                1072
             ],
-            "id": "c0de0004-4444-4a00-9000-000000000004",
+            "id": "529ee27e-8fd2-4b85-8f2e-3b728bfa18a2",
             "name": "Parse Interaction"
         },
         {
@@ -332,10 +352,10 @@
             "type": "n8n-nodes-base.if",
             "typeVersion": 2.2,
             "position": [
-                -176,
-                608
+                -2176,
+                1072
             ],
-            "id": "1f000005-5555-4a00-9000-000000000005",
+            "id": "f4284d3a-724d-408b-86e2-937b0910bdac",
             "name": "Route Approval"
         },
         {
@@ -350,11 +370,18 @@
             "type": "n8n-nodes-base.emailSend",
             "typeVersion": 2.1,
             "position": [
-                96,
-                496
+                -1904,
+                960
             ],
-            "id": "ema10006-6666-4a00-9000-000000000006",
-            "name": "Dispatch Customer Email"
+            "id": "09835d1c-fb8b-4f59-ae56-94f4cb60c1f6",
+            "name": "Dispatch Customer Email",
+            "webhookId": "e0a852e8-3d95-4230-b347-d9277e5339a4",
+            "credentials": {
+                "smtp": {
+                    "id": "aXhDvn4IQlBQyRRA",
+                    "name": "SMTP account"
+                }
+            }
         },
         {
             "parameters": {
@@ -368,10 +395,10 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.4,
             "position": [
-                352,
-                496
+                -1648,
+                960
             ],
-            "id": "51ac0007-7777-4a00-9000-000000000007",
+            "id": "662c8c14-3161-423e-91ee-2108e3417262",
             "name": "Update Card - Approved"
         },
         {
@@ -386,23 +413,25 @@
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.4,
             "position": [
-                608,
-                720
+                -1392,
+                1184
             ],
-            "id": "51ac0008-8888-4a00-9000-000000000008",
+            "id": "3e767ea2-be4f-4a6d-b197-ac3ac701b215",
             "name": "Update Card - Escalated"
         },
         {
             "parameters": {
                 "project": {
                     "__rl": true,
+                    "value": "10001",
                     "mode": "list",
-                    "value": ""
+                    "cachedResultName": "Customer Ops Triage Engine"
                 },
                 "issueType": {
                     "__rl": true,
+                    "value": "10004",
                     "mode": "list",
-                    "value": ""
+                    "cachedResultName": "Epic"
                 },
                 "summary": "=Rejected triage draft for {{ $('Parse Interaction').item.json.customer_email }} — escalated by {{ $('Parse Interaction').item.json.user }}",
                 "additionalFields": {
@@ -412,11 +441,17 @@
             "type": "n8n-nodes-base.jira",
             "typeVersion": 1,
             "position": [
-                352,
-                720
+                -1648,
+                1184
             ],
-            "id": "d768d2d8-9a10-4b22-c333-607374cf9999",
-            "name": "Create Escalation Ticket"
+            "id": "c2670dcd-7045-458b-86a2-ec3e1cc03751",
+            "name": "Create Escalation Ticket",
+            "credentials": {
+                "jiraSoftwareCloudApi": {
+                    "id": "KZp27YAHhmZlJlXg",
+                    "name": "Jira SW Cloud account"
+                }
+            }
         }
     ],
     "pinData": {},
@@ -607,7 +642,7 @@
         "binaryMode": "separate",
         "availableInMCP": false
     },
-    "versionId": "4c070f0b-df21-4114-b7d0-6ba5d74a165e",
+    "versionId": "21b1bc9b-1020-4224-8ffb-5d9ff736b903",
     "meta": {
         "templateCredsSetupCompleted": true,
         "instanceId": "8ca65399de194f0cca324af9fcb93d18007a305d42c83e9c855a1b92e53ca99c"

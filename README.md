@@ -70,7 +70,7 @@ This project is organized into four technical implementation phases. Click the l
 > **Portfolio note:** This project is a demonstration system — it is **not meant to run 24/7**. The intended flow is: bring the whole local pipeline up on demand with a single command, let it run a smoke test that proves the RAG engine works, and commit the generated result log in `logs/` as evidence. Bring it up again live only when you want to drive the n8n orchestrator or a Cloudflare tunnel.
 
 ### Prerequisites you install yourself (once)
-The bootstrap script provisions *everything else*, but these three are your responsibility:
+The bootstrap script provisions *everything else*, but these are your responsibility:
 
 1. **Python 3.10+**
 2. **Docker Desktop** (used to run the pgvector PostgreSQL database — running, no manual config needed)
@@ -80,6 +80,8 @@ The bootstrap script provisions *everything else*, but these three are your resp
    ollama pull llama3.2          # or any chat model; set it in backend/.env
    ollama pull nomic-embed-text  # embedding model (must stay 768-dim)
    ```
+4. **Gmail + Google Apps Script:** Set up a time-driven script in Google Apps Script to pull unread emails and forward them to your VPS n8n webhook.
+
 
 ### Run it
 From the repository root:

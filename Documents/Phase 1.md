@@ -168,3 +168,14 @@ Before migrating to Phase 2, the network routing endpoints must successfully pas
 | **Local LLM Engine** | `curl http://localhost:11434/api/tags` | JSON array confirming local presence of target model (gemma2:9b or llama3.2) |
 | **Reverse Network Tunnel** | Navigate to custom tunnel URL via external browser | Plaintext verification response: "Ollama is running" |
 | **Cloud Orchestration Gate** | Access `http://[YOUR-VPS-IP]:5678` | Renders active, authenticated n8n workspace canvas |
+
+---
+
+## 7. Email Ingress via Google Apps Script (Trigger Forwarder)
+
+The system utilizes an event-driven ingress strategy to ingest customer support emails:
+* **Gmail Pull Mechanism:** A cloud-based **Google Apps Script** executes on a time-driven trigger (configured to run dynamically every 5-10 minutes, or manually every minute for testing).
+* **Ingress Filtering:** The script queries the Gmail inbox using `is:unread label:inbox after:YYYY/MM/DD` to capture only unread emails received on the current date, processing only the single most recent unread thread.
+* **Webhook Forwarding:** It compiles the payload (`sender_email`, `text`, and `subject`) and forwards it as a JSON POST request to the n8n Webhook node (`/webhook/triage` or `/webhook-test/triage`).
+* **State Management:** Once the webhook returns a successful response code (`2xx`), the script marks the email thread as read in Gmail to prevent duplicate processing.
+
